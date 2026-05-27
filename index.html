@@ -1236,9 +1236,9 @@ function renderStaplesSuggestions(){
   if(!allStaples.length){if(sec)sec.style.display='none';return;}
   if(sec)sec.style.display='';
   const onList=new Set(state.groceries.map(g=>g.name.toLowerCase()));
-  const toShow=allStaples.filter(s=>!onList.has(s.name.toLowerCase()));
+  const toShow=allStaples.map((s,i)=>({s,i})).filter(({s})=>!onList.has(s.name.toLowerCase()));
   if(!toShow.length){el.innerHTML='<div style="font-size:.8rem;color:var(--text-muted);font-weight:600;padding:4px 0;">All staples are on your list!</div>';return;}
-  el.innerHTML=toShow.map((s,i)=>'<button class="staple-chip" onclick="addStapleToList(this.dataset.idx)" data-idx="'+i+'">'+esc(s.name)+'<span class="sc-store">'+esc(s.store!=='Any'?s.store:'')+'</span></button>').join('');
+  el.innerHTML=toShow.map(({s,i})=>'<button class="staple-chip" onclick="addStapleToList(this.dataset.idx)" data-idx="'+i+'">'+esc(s.name)+'<span class="sc-store">'+esc(s.store!=='Any'?s.store:'')+'</span></button>').join('');
 }
 function addStapleToList(idx){
   const allStaples=[...BUILTIN_STAPLES,...state.staples];const s=allStaples[parseInt(idx)];if(!s)return;
