@@ -1009,7 +1009,7 @@ function loadGCalEvents(manual){
   if(!ics1&&!ics2){if(manual)showToast('No ICS URL set in Settings');return;}
   const statusEl=document.getElementById('gcalStatus');
   if(statusEl){statusEl.style.display='';statusEl.textContent='Syncing Google Calendar...';}
-  _gcalEvents=[];
+  window._gcalEvents=[];
   const promises=[];
   const urls=[ics1,ics2].filter(u=>u.trim());
   urls.forEach(url=>{
@@ -1018,17 +1018,17 @@ function loadGCalEvents(manual){
     promises.push(
       fetch(proxy).then(r=>r.text()).then(text=>{
         const events=parseICS(text);
-        _gcalEvents=_gcalEvents.concat(events);
+        window._gcalEvents=window._gcalEvents.concat(events);
       }).catch(()=>{})
     );
   });
   Promise.all(promises).then(()=>{
     if(statusEl){
-      if(_gcalEvents.length>0){statusEl.textContent='Google Calendar: '+_gcalEvents.length+' events loaded';}
+      if(window._gcalEvents.length>0){statusEl.textContent='Google Calendar: '+window._gcalEvents.length+' events loaded';}
       else{statusEl.textContent='Google Calendar: connected (no upcoming events found)';}
     }
     renderSchedule();
-    if(manual)showToast('Calendar synced! '+_gcalEvents.length+' events loaded.');
+    if(manual)showToast('Calendar synced! '+window._gcalEvents.length+' events loaded.');
   });
 }
 
