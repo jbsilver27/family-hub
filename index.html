@@ -746,7 +746,7 @@ function renderSchedule() {
   if (!container) return;
   const events = state.calendarEvents;
   if (!events.length) {
-    container.innerHTML = '<div class="empty-state"><span>📅</span><p>No calendar events loaded. Add your Google Calendar API key in Settings to see today's schedule.</p></div>';
+    container.innerHTML = '<div class="empty-state"><span>📅</span><p>No calendar events loaded. Add your Google Calendar API key in Settings to see today\'s schedule.</p></div>';
     return;
   }
   container.innerHTML = events.map(ev => {
@@ -781,7 +781,7 @@ function renderDinnerBanner() {
   const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const today = days[new Date().getDay()];
   const meal = state.mealPlan[today];
-  el.textContent = meal || 'Not planned yet — tap Meals to set tonight's dinner';
+  el.textContent = meal || 'Not planned yet — tap Meals to set tonight\'s dinner';
 }
 
 function renderKidsToday() {
