@@ -365,7 +365,8 @@ body{font-family:'Nunito',sans-serif;background:var(--cream);color:var(--text);m
     </div>
     <div class="pgrid">
       <div class="prt" id="prt-fedAM" onclick="togglePetTask('fedAM')"><div class="prte">🍖</div><div class="prtl">Morning Feed</div><div class="prtv" id="prv-fedAM">Not done</div></div>
-      <div class="prt" id="prt-fedPM" onclick="togglePetTask('fedPM')"><div class="prte">🥣</div><div class="prtl">Evening Feed</div><div class="prtv" id="prv-fedPM">Not done</div></div>
+      <div class="prt"       <div class="prt" id="prt-fedAfternoon" onclick="togglePetTask('fedAfternoon')"><div class="prte">🌮</div><div class="prtl">Afternoon Feed</div><div class="prtv" id="prv-fedAfternoon">Not done</div></div>
+      id="prt-fedPM" onclick="togglePetTask('fedPM')"><div class="prte">🥣</div><div class="prtl">Evening Feed</div><div class="prtv" id="prv-fedPM">Not done</div></div>
       <div class="prt" id="prt-walked" onclick="togglePetTask('walked')"><div class="prte">🚶</div><div class="prtl">Walk</div><div class="prtv" id="prv-walked">Not done</div></div>
       <div class="prt" id="prt-meds" onclick="togglePetTask('meds')"><div class="prte">💊</div><div class="prtl">Medications</div><div class="prtv" id="prv-meds">Not done</div></div>
     </div>
@@ -575,7 +576,8 @@ body{font-family:'Nunito',sans-serif;background:var(--cream);color:var(--text);m
 <script>
 
 // ============================================================
-// FAMILY HUB - Complete Application Logic
+// FAMILY HUB v2 - Complete Application Logic
+// Uses the actual HTML IDs and function names
 // ============================================================
 
 // ---- State ----
@@ -583,14 +585,23 @@ let state = {
   currentTab: 'today',
   recipes: [],
   groceries: { 'Target': [], 'Costco': [], 'Whole Foods': [], 'Other': [] },
+  staples: [],
   activeStore: 'Target',
   tasks: [],
-  activities: { lily: [], emma: [] },
+  activities: { 1: [], 2: [] },
+  petTasks: { fedAM: false, fedAfternoon: false, fedPM: false, walked: false, meds: false },
   petReminders: [],
   mealPlan: { Mon:'',Tue:'',Wed:'',Thu:'',Fri:'',Sat:'',Sun:'' },
-  settings: { gcalApiKey:'', gcalId1:'', gcalId2:'', weatherKey:'', weatherCity:'New York', name1:'Lily', name2:'Emma', age1:'10', age2:'4', dogName:'Biscuit' },
+  settings: { momName:'Mom', dadName:'Dad', kid1:'Lily', kid2:'Emma', petName:'Biscuit', petBreed:'Dog', weatherKey:'', weatherCity:'New York', calId:'', calId2:'', apiKey:'', city:'' },
   calendarEvents: []
 };
+
+const RECIPE_TAGS = ['Quick','Kid-Friendly','Vegetarian','Vegan','Gluten-Free','Dairy-Free','Healthy','Comfort Food','Slow Cooker','Instant Pot','Grilling','One-Pan','Make Ahead','Freezer Friendly','Date Night'];
+const ACTIVITY_TYPES = ['Soccer','Dance','Swimming','Gymnastics','Piano','Art','Tutoring','Playdate','Birthday Party','Doctor','Dentist','School Event','Camp','Library','Sports','Music','Theater','Other'];
+const TASK_PRIORITIES = ['High','Medium','Low'];
+const TASK_ASSIGNEES = ['Mom','Dad','Both','Lily','Emma'];
+const GROCERY_CATEGORIES = ['Produce','Dairy','Meat & Seafood','Bakery','Frozen','Pantry','Snacks','Beverages','Household','Personal Care','Baby & Kids','Pet','Deli','Pharmacy','Other'];
+const PET_EMOJIS = ['🐾','💊','🛁','🦮','🎾','🦴','🏥','✂️','💉'];
 
 // ---- Boot ----
 document.addEventListener('DOMContentLoaded', () => {
@@ -600,25 +611,32 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(updateDateTime, 60000);
   fetchWeather();
   fetchCalendar();
-  renderAll();
-  // PWA service worker
+  renderToday();
+  applyNames();
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
+    navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 });
+
+function applyNames() {
+  const s = state.settings;
+  const k1 = document.getElementById('k1Nm'); if(k1) k1.textContent = (s.kid1||'Lily') + ' 🌟';
+  const k2 = document.getElementById('k2Nm'); if(k2) k2.textContent = (s.kid2||'Emma') + ' 🦋';
+  const pn = document.getElementById('petNm'); if(pn) pn.textContent = s.petName||'Biscuit';
+  const pb = document.getElementById('petBr'); if(pb) pb.textContent = s.petBreed||'Dog';
+}
 
 // ---- Date/Time ----
 function updateDateTime() {
   const now = new Date();
   const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const dateStr = days[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate();
   const el = document.getElementById('dayPill');
-  if (el) el.textContent = dateStr;
-  const greetEl = document.getElementById('greet');
-  if (greetEl) {
+  if(el) el.textContent = days[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate();
+  const greet = document.getElementById('greet');
+  if(greet) {
     const h = now.getHours();
-    greetEl.textContent = h < 12 ? 'Good Morning! ☀️' : h < 17 ? 'Good Afternoon! 🌤️' : 'Good Evening! 🌙';
+    greet.textContent = h < 12 ? 'Good Morning! ☀️' : h < 17 ? 'Good Afternoon! 🌤' : 'Good Evening! 🌙';
   }
 }
 
@@ -628,34 +646,31 @@ function showTab(name) {
   document.querySelectorAll('.tc').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
   const tab = document.getElementById('tc-' + name);
-  if (tab) tab.classList.add('active');
+  if(tab) tab.classList.add('active');
   const btn = document.getElementById('nb-' + name);
-  if (btn) btn.classList.add('active');
-  if (name === 'today') renderToday();
-  if (name === 'meals') renderMeals();
-  if (name === 'grocery') renderGrocery();
-  if (name === 'kids') renderKids();
-  if (name === 'tasks') renderTasks();
-  if (name === 'pet') renderPet();
+  if(btn) btn.classList.add('active');
+  if(name === 'today') renderToday();
+  if(name === 'meals') renderMeals();
+  if(name === 'grocery') renderGrocery();
+  if(name === 'kids') renderKids();
+  if(name === 'tasks') renderTasks();
+  if(name === 'pet') renderPet();
 }
 
 // ---- Modal ----
 function openModal(id) {
   const m = document.getElementById(id);
-  if (m) { m.style.display='flex'; m.classList.add('open'); }
+  if(m) { m.style.display='flex'; }
 }
 function closeModal(id) {
   const m = document.getElementById(id);
-  if (m) { m.style.display='none'; m.classList.remove('open'); }
-}
-function closeAllModals() {
-  document.querySelectorAll('.modal').forEach(m => { m.style.display='none'; m.classList.remove('open'); });
+  if(m) { m.style.display='none'; }
 }
 
 // ---- Toast ----
 function showToast(msg) {
   const t = document.getElementById('toast');
-  if (!t) return;
+  if(!t) return;
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
@@ -663,271 +678,369 @@ function showToast(msg) {
 
 // ---- Weather ----
 async function fetchWeather() {
-  const key = state.settings.weatherKey;
-  const city = state.settings.weatherCity || 'New York';
-  const pill = document.getElementById('wPill');
+  const key = state.settings.weatherKey || state.settings.apiKey;
+  const city = state.settings.weatherCity || state.settings.city || 'New York';
   const card = document.getElementById('wCard');
-  if (!key) {
-    if (pill) pill.textContent = '🌤️ Add weather key in settings';
-    if (card) card.innerHTML = '<div class="weather-no-key"><p>Add your free OpenWeatherMap API key in Settings to see live weather.</p></div>';
+  if(!key) {
+    if(card) card.innerHTML = '<p style="padding:12px;color:#89898">Add your free OpenWeatherMap API key in Settings to see live weather.</p>';
     return;
   }
   try {
-    const r = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${key}&units=imperial`);
+    const r = await fetch('https://api.openweathermap.org/data/2.5/weather?q=' + encodeURIComponent(city) + '&appid=' + key + '&units=imperial');
     const d = await r.json();
-    if (d.cod !== 200) throw new Error(d.message);
-    const icon = getWeatherEmoji(d.weather[0].main);
+    if(d.cod !== 200) throw new Error(d.message);
+    const em = getWeatherEmoji(d.weather[0].main);
     const temp = Math.round(d.main.temp);
-    const feels = Math.round(d.main.feels_like);
+    const hi = Math.round(d.main.temp_max);
+    const lo = Math.round(d.main.temp_min);
+    const hum = d.main.humidity;
+    const wind = Math.round(d.wind.speed);
     const desc = d.weather[0].description;
-    if (pill) pill.textContent = icon + ' ' + temp + '°F';
-    if (card) card.innerHTML = `
-      <div class="weather-main">
-        <span class="weather-icon">${icon}</span>
-        <div class="weather-info">
-          <div class="weather-temp">${temp}°F</div>
-          <div class="weather-desc">${desc}</div>
-          <div class="weather-feels">Feels like ${feels}°F · ${city}</div>
-        </div>
-      </div>`;
-    localStorage.setItem('fh_weather', JSON.stringify({icon,temp,feels,desc,city,ts:Date.now()}));
+    const wEmoji = document.getElementById('wEmoji'); if(wEmoji) wEmoji.textContent = em;
+    const wTemp = document.getElementById('wTemp'); if(wTemp) wTemp.textContent = temp + '°F';
+    const wDesc = document.getElementById('wDesc'); if(wDesc) wDesc.textContent = desc;
+    const wLoc = document.getElementById('wLoc'); if(wLoc) wLoc.textContent = city;
+    const wHi = document.getElementById('wHi'); if(wHi) wHi.textContent = 'High: ' + hi + '°';
+    const wLo = document.getElementById('wLo'); if(wLo) wLo.textContent = 'Low: ' + lo + '°';
+    const wHum = document.getElementById('wHum'); if(wHum) wHum.textContent = 'Humidity: ' + hum + '%';
+    const wWind = document.getElementById('wWind'); if(wWind) wWind.textContent = 'Wind: ' + wind + ' mph';
+    localStorage.setItem('fh_weather', JSON.stringify({em,temp,hi,lo,hum,wind,desc,city,ts:Date.now()}));
   } catch(e) {
     const cached = localStorage.getItem('fh_weather');
-    if (cached && pill) {
+    if(cached && card) {
       const w = JSON.parse(cached);
-      pill.textContent = w.icon + ' ' + w.temp + '°F';
+      const wTemp = document.getElementById('wTemp'); if(wTemp) wTemp.textContent = w.temp + '°F';
     }
   }
 }
-
 function getWeatherEmoji(main) {
-  const m = { Clear:'☀️', Clouds:'☁️', Rain:'🌧️', Drizzle:'🌦️', Thunderstorm:'⛈️', Snow:'❄️', Mist:'🌫️', Fog:'🌫️', Haze:'🌫️' };
+  const m = {Clear:'☀️',Clouds:'☁️',Rain:'🌧️',Drizzle:'🌦️',Thunderstorm:'⛈️',Snow:'❄️',Mist:'🌫️',Fog:'🌫️',Haze:'🌫️'};
   return m[main] || '🌤️';
 }
 
 // ---- Google Calendar ----
+function loadCalendar() { fetchCalendar(); showToast('Refreshing calendar...'); }
 async function fetchCalendar() {
-  const key = state.settings.gcalApiKey;
-  const id1 = state.settings.gcalId1;
-  if (!key || !id1) return;
+  const key = state.settings.apiKey;
+  const id1 = state.settings.calId;
+  if(!key || !id1) {
+    const cb = document.getElementById('calBanner');
+    if(cb) cb.style.display='';
+    return;
+  }
   const now = new Date();
-  const start = now.toISOString();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
   const end = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1).toISOString();
   try {
-    const ids = [id1, state.settings.gcalId2].filter(Boolean);
+    const ids = [id1, state.settings.calId2].filter(Boolean);
     let events = [];
-    for (const id of ids) {
-      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events?key=${key}&timeMin=${start}&timeMax=${end}&singleEvents=true&orderBy=startTime`;
+    for(const id of ids) {
+      const url = 'https://www.googleapis.com/calendar/v3/calendars/' + encodeURIComponent(id) + '/events?key=' + key + '&timeMin=' + start + '&timeMax=' + end + '&singleEvents=true&orderBy=startTime';
       const r = await fetch(url);
       const d = await r.json();
-      if (d.items) events = events.concat(d.items);
+      if(d.items) events = events.concat(d.items);
     }
-    events.sort((a,b) => {
-      const ta = a.start.dateTime || a.start.date;
-      const tb = b.start.dateTime || b.start.date;
-      return ta.localeCompare(tb);
-    });
+    events.sort((a,b) => (a.start.dateTime||a.start.date).localeCompare(b.start.dateTime||b.start.date));
     state.calendarEvents = events;
     renderSchedule();
-  } catch(e) { console.warn('Calendar fetch failed', e); }
+    updateStats();
+  } catch(e) { console.warn('Cal fetch failed', e); }
 }
 
 // ---- TODAY TAB ----
 function renderToday() {
   renderSchedule();
-  renderTodayStats();
+  updateStats();
   renderDinnerBanner();
   renderKidsToday();
   renderPetToday();
 }
 
 function renderSchedule() {
-  const container = document.getElementById('evList');
-  if (!container) return;
+  const el = document.getElementById('evList');
+  if(!el) return;
   const events = state.calendarEvents;
-  if (!events.length) {
-    container.innerHTML = '<div class="empty-state"><span>📅</span><p>No calendar events loaded. Add your Google Calendar API key in Settings to see today\'s schedule.</p></div>';
+  if(!events.length) {
+    el.innerHTML = '<div class="ev-empty">📅 No events loaded. Add your Google Calendar API key in Settings.</div>';
     return;
   }
-  container.innerHTML = events.map(ev => {
+  el.innerHTML = events.map(ev => {
     const start = ev.start.dateTime ? new Date(ev.start.dateTime) : null;
     const timeStr = start ? start.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : 'All day';
-    return `<div class="schedule-item">
-      <div class="schedule-time">${timeStr}</div>
-      <div class="schedule-details">
-        <div class="schedule-title">${ev.summary || 'Event'}</div>
-        ${ev.location ? '<div class="schedule-loc">📍 '+ev.location+'</div>' : ''}
-      </div>
-    </div>`;
+    return '<div class="ev-item"><div class="ev-time">' + timeStr + '</div><div class="ev-det"><div class="ev-title">' + (ev.summary||'Event') + '</div>' + (ev.location ? '<div class="ev-loc">📍 ' + ev.location + '</div>' : '') + '</div></div>';
   }).join('');
 }
 
-function renderTodayStats() {
-  const evEl = document.getElementById('qEvents');
-  const tkEl = document.getElementById('qTasks');
-  const grEl = document.getElementById('qGroc');
-  if (evEl) evEl.textContent = state.calendarEvents.length;
-  if (tkEl) tkEl.textContent = state.tasks.filter(t=>!t.done).length;
-  if (grEl) {
-    let total = 0;
-    Object.values(state.groceries).forEach(arr => { total += arr.filter(i=>!i.checked).length; });
-    grEl.textContent = total;
-  }
+function updateStats() {
+  const evEl = document.getElementById('qEvents'); if(evEl) evEl.textContent = state.calendarEvents.length;
+  const tkEl = document.getElementById('qTasks'); if(tkEl) tkEl.textContent = state.tasks.filter(t=>!t.done).length;
+  const grEl = document.getElementById('qGroc'); if(grEl) { let tot=0; Object.values(state.groceries).forEach(a=>{ tot+=a.filter(i=>!i.checked).length; }); grEl.textContent = tot; }
+  const mlEl = document.getElementById('qMeals'); if(mlEl) { const planned = Object.values(state.mealPlan).filter(Boolean).length; mlEl.textContent = planned + '/7'; }
 }
 
 function renderDinnerBanner() {
   const el = document.getElementById('dBanN');
-  if (!el) return;
+  if(!el) return;
   const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const today = days[new Date().getDay()];
-  const meal = state.mealPlan[today];
-  el.textContent = meal || 'Not planned yet — tap Meals to set tonight\'s dinner';
+  el.textContent = state.mealPlan[today] || 'Not planned yet — tap Meals to set tonight\'s dinner';
 }
 
 function renderKidsToday() {
-  const c1 = document.getElementById('k1Acts');
-  const c2 = document.getElementById('k2Acts');
-  const n1 = state.settings.name1 || 'Lily';
-  const n2 = state.settings.name2 || 'Emma';
-  const h1 = document.getElementById('k1Nm');
-  const h2 = document.getElementById('k2Nm');
-  if (h1) h1.textContent = n1 + ' Today';
-  if (h2) h2.textContent = n2 + ' Today';
+  const el = document.getElementById('kidsTodayList');
+  if(!el) return;
   const today = new Date().toLocaleDateString('en-US',{weekday:'long'});
-  if (c1) {
-    const acts = (state.activities.lily||[]).filter(a=>a.days&&a.days.includes(today));
-    c1.innerHTML = acts.length ? acts.map(a=>`<div class="act-chip">${a.emoji||'📌'} ${a.name} ${a.time?'@ '+a.time:''}</div>`).join('') : '<span class="empty-small">Nothing scheduled</span>';
-  }
-  if (c2) {
-    const acts = (state.activities.emma||[]).filter(a=>a.days&&a.days.includes(today));
-    c2.innerHTML = acts.length ? acts.map(a=>`<div class="act-chip">${a.emoji||'📌'} ${a.name} ${a.time?'@ '+a.time:''}</div>`).join('') : '<span class="empty-small">Nothing scheduled</span>';
-  }
+  const s = state.settings;
+  const names = [s.kid1||'Lily', s.kid2||'Emma'];
+  const kids = [state.activities[1]||[], state.activities[2]||[]];
+  let html = '';
+  kids.forEach((acts, i) => {
+    const todayActs = acts.filter(a => a.days && a.days.includes(today));
+    if(todayActs.length) {
+      html += '<div class="kids-today-kid"><strong>' + names[i] + '</strong>: ' + todayActs.map(a => '📌 ' + a.name + (a.time?' @ '+a.time:'')).join(', ') + '</div>';
+    }
+  });
+  el.innerHTML = html || '<div class="ev-empty">No activities today</div>';
 }
 
 function renderPetToday() {
-  const el = document.getElementById('petTodayLbl');
-  if (!el) return;
-  const reminders = state.petReminders.filter(r=>!r.done);
-  el.innerHTML = reminders.length
-    ? reminders.map((r,i)=>`<div class="pet-today-item"><span>${r.emoji||'🐾'} ${r.task}</span><button onclick="togglePetTaskToday(${i})" class="btn-small">Done</button></div>`).join('')
-    : '<span class="empty-small">All done! 🐾</span>';
+  const tasks = state.petTasks;
+  const setPetUI = (key, done) => {
+    const el = document.getElementById('prt-' + key);
+    const vEl = document.getElementById('prv-' + key);
+    if(el) el.classList.toggle('done', done);
+    if(vEl) vEl.textContent = done ? '✅ Done' : 'Not done';
+  };
+  Object.entries(tasks).forEach(([k,v]) => setPetUI(k,v));
+  const ptAM = document.getElementById('ptAM'); if(ptAM) ptAM.textContent = tasks.fedAM ? '✅' : '🍞';
+  const ptAMv = document.getElementById('ptAMv'); if(ptAMv) ptAMv.textContent = tasks.fedAM ? 'Fed' : 'Not fed';
+  const ptPM = document.getElementById('ptPM'); if(ptPM) ptPM.textContent = tasks.fedPM ? '✅' : '🍞';
+  const ptPMv = document.getElementById('ptPMv'); if(ptPMv) ptPMv.textContent = tasks.fedPM ? 'Fed' : 'Not fed';
+  const ptWk = document.getElementById('ptWk'); if(ptWk) ptWk.textContent = tasks.walked ? '✅' : '🦶';
+  const ptWkv = document.getElementById('ptWkv'); if(ptWkv) ptWkv.textContent = tasks.walked ? 'Walked' : 'Not walked';
+  const petTL = document.getElementById('petTodayLbl');
+  if(petTL) petTL.textContent = Object.values(tasks).filter(Boolean).length + ' / ' + Object.keys(tasks).length + ' tasks done today';
 }
 
 // ---- MEALS TAB ----
 function renderMeals() {
   renderWeekGrid();
-  renderRecipeLibrary();
+  renderRecipeGrid();
 }
 
 function renderWeekGrid() {
   const grid = document.getElementById('wkGrid');
-  if (!grid) return;
+  if(!grid) return;
   const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const today = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date().getDay()];
   grid.innerHTML = days.map(d => {
-    const meal = state.mealPlan[d] || '';
-    const isToday = d === today;
-    return `<div class="day-card ${isToday?'today':''}">
-      <div class="day-label">${d}</div>
-      <div class="day-meal" onclick="openAssignMeal('${d}')">${meal || '<span class="add-meal-hint">+ Add</span>'}</div>
-    </div>`;
+    const meal = state.mealPlan[d]||'';
+    return '<div class="day-card' + (d===today?' today':'') + '" onclick="openAssignMeal(\'' + d + '\')">' +
+      '<div class="day-lbl">' + d + '</div>' +
+      '<div class="day-meal">' + (meal||'<span class="add-meal-hint">+ Add</span>') + '</div>' +
+    '</div>';
   }).join('');
 }
 
-function renderRecipeLibrary() {
+function clearWeekMeals() {
+  if(!confirm('Clear all meals for this week?')) return;
+  state.mealPlan = {Mon:'',Tue:'',Wed:'',Thu:'',Fri:'',Sat:'',Sun:''};
+  saveAllData();
+  renderWeekGrid();
+  renderDinnerBanner();
+  showToast('Week cleared');
+}
+
+function renderRecipeGrid() {
   const grid = document.getElementById('rGrid');
-  if (!grid) return;
-  if (!state.recipes.length) {
-    grid.innerHTML = '<div class="empty-state"><span>🍽️</span><p>No recipes yet. Click + to add your first recipe!</p></div>';
+  const count = document.getElementById('recCount');
+  if(!grid) return;
+  if(count) count.textContent = state.recipes.length + ' recipe' + (state.recipes.length!==1?'s':'');
+  if(!state.recipes.length) {
+    grid.innerHTML = '<div class="rec-empty">🍽️ No recipes yet. Click + Add Recipe to get started!</div>';
     return;
   }
-  grid.innerHTML = state.recipes.map((r,i) => `
-    <div class="recipe-card" onclick="viewRecipe(${i})">
-      <div class="recipe-emoji">${r.emoji||'🍽️'}</div>
-      <div class="recipe-name">${r.name}</div>
-      <div class="recipe-tags">${(r.tags||[]).map(t=>'<span class="tag">'+t+'</span>').join('')}</div>
-      <div class="recipe-actions">
-        <button class="btn-small" onclick="event.stopPropagation();openAssignMealFromRecipe(${i})">Assign</button>
-        <button class="btn-small danger" onclick="event.stopPropagation();deleteRecipe(${i})">✕</button>
-      </div>
-    </div>`).join('');
+  grid.innerHTML = state.recipes.map((r,i) => '<div class="rec-card" onclick="viewRecipe(' + i + ')">' +
+    '<div class="rec-emoji">' + (r.emoji||'🍽️') + '</div>' +
+    '<div class="rec-name">' + r.name + '</div>' +
+    '<div class="rec-tags">' + (r.tags||[]).map(t=>'<span class="tag">'+t+'</span>').join('') + '</div>' +
+    '</div>').join('');
 }
 
 function openAssignMeal(day) {
-  document.getElementById('assignTitle').textContent = day;
-  document.getElementById('dayPicker').value = day;
+  document.getElementById('assignDayIdx').value = day;
+  const title = document.getElementById('assignTitle');
+  if(title) title.textContent = 'Plan for ' + day;
   const sel = document.getElementById('assignRecSel');
-  sel.innerHTML = '<option value="">-- type or pick --</option>' + state.recipes.map((r,i)=>`<option value="${r.name}">${r.emoji||''} ${r.name}</option>`).join('');
-  openModal('modal-assign');
+  if(sel) sel.innerHTML = '<option value="">-- Pick a recipe --</option>' + state.recipes.map(r=>'<option value="'+r.name+'">'+(r.emoji||'')+' '+r.name+'</option>').join('');
+  document.getElementById('assignCustom').value = '';
+  const sugSec = document.getElementById('suggestSection');
+  if(sugSec) sugSec.style.display = 'none';
+  openModal('assignMealModal');
 }
 
-function openAssignMealFromRecipe(idx) {
-  const r = state.recipes[idx];
-  document.getElementById('assignRecSel').value = r.name;
-  openModal('modal-assign');
-}
-
-function saveAssignMeal() {
-  const day = document.getElementById('dayPicker').value;
-  const meal = document.getElementById('assignRecSel').value || document.getElementById('assignCustom').value;
-  if (!day || !meal) { showToast('Please select a day and meal'); return; }
+function saveMeal() {
+  const day = document.getElementById('assignDayIdx').value;
+  const sel = document.getElementById('assignRecSel').value;
+  const custom = document.getElementById('assignCustom').value.trim();
+  const meal = sel || custom;
+  if(!day || !meal) { showToast('Please select a day and meal'); return; }
   state.mealPlan[day] = meal;
   saveAllData();
   renderWeekGrid();
   renderDinnerBanner();
-  closeModal('modal-assign');
-  showToast('Meal planned! 🍽️');
+  updateStats();
+  closeModal('assignMealModal');
+  showToast(day + ': ' + meal + ' planned! 🍽️');
 }
 
-function saveRecipe() {
-  const name = document.getElementById('recNm').value.trim();
-  if (!name) { showToast('Recipe name required'); return; }
-  const ingContainer = document.getElementById('ingRows');
-  const ingInputs = ingContainer ? ingContainer.querySelectorAll('input[type=text]') : [];
-  const ingredients = Array.from(ingInputs).map(i=>i.value.trim()).filter(Boolean);
-  const instructions = document.getElementById('recNotes').value.trim();
-  const tags = document.getElementById('recTags').value.trim().split(',').map(t=>t.trim()).filter(Boolean);
-  const emoji = document.getElementById('recEmoji').value.trim() || '🍽️';
-  state.recipes.push({ name, ingredients, instructions, tags, emoji });
+function addSelIngredients() {
+  const recName = document.getElementById('assignRecSel').value;
+  const rec = state.recipes.find(r => r.name === recName);
+  const sugSec = document.getElementById('suggestSection');
+  const sugList = document.getElementById('sugList');
+  if(!rec || !rec.ingredients || !rec.ingredients.length) { showToast('No ingredients found for this recipe'); return; }
+  if(sugSec) sugSec.style.display = '';
+  if(sugList) {
+    sugList.innerHTML = rec.ingredients.map((ing,i) => '<label class="sug-item"><input type="checkbox" checked data-ing="' + encodeURIComponent(JSON.stringify(ing)) + '"> ' + (typeof ing === 'object' ? ing.name : ing) + '</label>').join('');
+  }
+}
+
+function confirmAddIngredients() {
+  const checkedBoxes = document.querySelectorAll('#sugList input:checked');
+  let added = 0;
+  checkedBoxes.forEach(cb => {
+    const ing = JSON.parse(decodeURIComponent(cb.getAttribute('data-ing')));
+    const name = typeof ing === 'object' ? ing.name : ing;
+    const store = typeof ing === 'object' && ing.store ? ing.store : state.activeStore;
+    const cat = typeof ing === 'object' && ing.category ? ing.category : 'Other';
+    if(!state.groceries[store]) state.groceries[store] = [];
+    if(!state.groceries[store].find(i=>i.name.toLowerCase()===name.toLowerCase())) {
+      state.groceries[store].push({name, category:cat, checked:false, id:Date.now()+added});
+      added++;
+    }
+  });
   saveAllData();
-  renderRecipeLibrary();
-  closeModal('modal-recipe');
-  showToast('Recipe saved! 🍳');
-  clearForm('modal-recipe');
+  closeModal('assignMealModal');
+  showToast(added + ' item' + (added!==1?'s':'') + ' added to grocery list! 🛒');
+}
+
+function planFromDetail() {
+  const id = document.getElementById('rdId').value;
+  const idx = parseInt(id);
+  const rec = state.recipes[idx];
+  if(!rec) return;
+  closeModal('recDetModal');
+  openAssignMeal('');
+  setTimeout(() => {
+    const sel = document.getElementById('assignRecSel');
+    if(sel) sel.value = rec.name;
+  }, 100);
+}
+
+// ---- RECIPE MODAL ----
+function openAddRecModal() { openModal('addRecModal'); }
+
+function addIngRow() {
+  const container = document.getElementById('ingRows');
+  if(!container) return;
+  const idx = container.querySelectorAll('.ing-row').length;
+  const storeOpts = Object.keys(state.groceries).map(s=>'<option>'+s+'</option>').join('');
+  const catOpts = GROCERY_CATEGORIES.map(c=>'<option>'+c+'</option>').join('');
+  const row = document.createElement('div');
+  row.className = 'ing-row';
+  row.innerHTML = '<input type="text" placeholder="Ingredient name" class="ing-name"> <input type="text" placeholder="Qty" class="ing-qty" style="width:60px"> <select class="ing-cat" style="max-width:110px"><option value="">Category</option>' + catOpts + '</select> <select id="ingStoreSelect_' + idx + '" class="ing-store" style="max-width:100px"><option value="">Store</option>' + storeOpts + '</select> <button type="button" onclick="removeIng(this)" class="btn-x">✕</button>';
+  container.appendChild(row);
+}
+
+function removeIng(btn) {
+  const row = btn.closest('.ing-row');
+  if(row) row.remove();
+}
+
+function saveRec() {
+  const name = document.getElementById('recNm').value.trim();
+  if(!name) { showToast('Recipe name is required'); return; }
+  const emoji = document.getElementById('recEmoji').value.trim() || '🍽️';
+  const time = document.getElementById('recTime').value.trim();
+  const serves = document.getElementById('recServes').value.trim();
+  const notes = document.getElementById('recNotes').value.trim();
+  // Tags - collect from checkboxes
+  const tagInputEl = document.getElementById('recTags');
+  const tags = tagInputEl ? tagInputEl.value.trim().split(',').map(t=>t.trim()).filter(Boolean) : [];
+  // Also check for checked tag pills
+  const checkedTags = Array.from(document.querySelectorAll('#recTagPills input:checked')).map(cb=>cb.value);
+  const allTags = [...new Set([...tags,...checkedTags])];
+  // Ingredients from rows
+  const ingRows = document.querySelectorAll('#ingRows .ing-row');
+  const ingredients = Array.from(ingRows).map(row => {
+    const n = row.querySelector('.ing-name'); const q = row.querySelector('.ing-qty'); const c = row.querySelector('.ing-cat'); const s = row.querySelector('.ing-store');
+    return { name: n?n.value.trim():'', qty: q?q.value.trim():'', category: c?c.value:'', store: s?s.value:'' };
+  }).filter(i=>i.name);
+
+  const editId = document.getElementById('recEditId').value;
+  if(editId !== '') {
+    state.recipes[parseInt(editId)] = {name,emoji,time,serves,notes,tags:allTags,ingredients};
+    showToast('Recipe updated! 🍳');
+  } else {
+    state.recipes.push({name,emoji,time,serves,notes,tags:allTags,ingredients});
+    showToast('Recipe saved! 🍳');
+  }
+  saveAllData();
+  renderRecipeGrid();
+  closeModal('addRecModal');
+  clearRecipeForm();
+}
+
+function clearRecipeForm() {
+  ['recNm','recEmoji','recTime','recServes','recTags','recNotes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  const ingRows = document.getElementById('ingRows');
+  if(ingRows) ingRows.innerHTML = '<div class="ing-row"><input type="text" placeholder="Ingredient name" class="ing-name"> <input type="text" placeholder="Qty" class="ing-qty" style="width:60px"> <select class="ing-cat" style="max-width:110px"><option value="">Category</option>' + GROCERY_CATEGORIES.map(c=>'<option>'+c+'</option>').join('') + '</select> <select id="ingStoreSelect_0" class="ing-store" style="max-width:100px"><option value="">Store</option>' + Object.keys(state.groceries).map(s=>'<option>'+s+'</option>').join('') + '</select> <button type="button" onclick="removeIng(this)" class="btn-x">✕</button></div>';
+  const editId = document.getElementById('recEditId'); if(editId) editId.value='';
+  const title = document.getElementById('recModTitle'); if(title) title.textContent='Add Recipe';
 }
 
 function viewRecipe(idx) {
   const r = state.recipes[idx];
-  document.getElementById('rdN').textContent = r.emoji + ' ' + r.name;
-  document.getElementById('rdIngs').innerHTML = (r.ingredients||[]).map(i=>`
-    <li>${i} <button class="btn-tiny" onclick="addIngredientToGrocery('${i.replace(/'/g,"\\'")}')">+ Grocery</button></li>`).join('');
-  document.getElementById('rdNotes').textContent = r.instructions || 'No instructions added.';
-  openModal('modal-recipe-detail');
+  if(!r) return;
+  const rdN = document.getElementById('rdN'); if(rdN) rdN.textContent = (r.emoji||'🍽️') + ' ' + r.name;
+  const rdM = document.getElementById('rdM'); if(rdM) rdM.textContent = [r.time?'Prep: '+r.time:'', r.serves?'Serves: '+r.serves:''].filter(Boolean).join(' · ');
+  const rdTags = document.getElementById('rdTags'); if(rdTags) rdTags.innerHTML = (r.tags||[]).map(t=>'<span class="tag">'+t+'</span>').join('');
+  const rdIngs = document.getElementById('rdIngs');
+  if(rdIngs) rdIngs.innerHTML = (r.ingredients||[]).map(ing => {
+    const n = typeof ing==='object'?ing.name:ing;
+    const q = typeof ing==='object'&&ing.qty?' ('+ing.qty+')':'';
+    return '<li>' + n + q + ' <button class="btn-tiny" onclick="addIngToList(\'' + encodeURIComponent(n) + '\',\'' + (typeof ing==='object'?ing.store||'':'' ) + '\',\'' + (typeof ing==='object'?ing.category||'Other':'Other') + '\')">🛒 Add</button></li>';
+  }).join('');
+  const rdNotes = document.getElementById('rdNotes'); if(rdNotes) rdNotes.textContent = r.notes||'No instructions added.';
+  const rdId = document.getElementById('rdId'); if(rdId) rdId.value = idx;
+  openModal('recDetModal');
 }
 
-function addIngredientToGrocery(item) {
-  const store = state.activeStore;
-  const existing = state.groceries[store] || [];
-  if (!existing.find(i=>i.name.toLowerCase()===item.toLowerCase())) {
-    existing.push({ name: item, category: 'Produce', checked: false, id: Date.now() });
-    state.groceries[store] = existing;
+function addIngToList(encName, store, cat) {
+  const name = decodeURIComponent(encName);
+  const targetStore = store || state.activeStore;
+  if(!state.groceries[targetStore]) state.groceries[targetStore] = [];
+  if(!state.groceries[targetStore].find(i=>i.name.toLowerCase()===name.toLowerCase())) {
+    state.groceries[targetStore].push({name, category:cat||'Other', checked:false, id:Date.now()});
     saveAllData();
-    showToast(item + ' added to ' + store + ' list! 🛒');
+    showToast(name + ' added to ' + targetStore + '! 🛒');
   } else {
     showToast('Already on your list!');
   }
 }
 
-function deleteRecipe(idx) {
-  state.recipes.splice(idx, 1);
+function deleteRec() {
+  const idx = parseInt(document.getElementById('rdId').value);
+  if(!confirm('Delete this recipe?')) return;
+  state.recipes.splice(idx,1);
   saveAllData();
-  renderRecipeLibrary();
-  showToast('Recipe removed');
+  renderRecipeGrid();
+  closeModal('recDetModal');
+  showToast('Recipe deleted');
 }
 
 // ---- GROCERY TAB ----
-const CATEGORIES = ['Produce','Dairy','Meat','Bakery','Frozen','Pantry','Snacks','Beverages','Household','Personal Care','Other'];
-
 function renderGrocery() {
   renderStoreTabs();
   renderGroceryList();
@@ -935,9 +1048,10 @@ function renderGrocery() {
 
 function renderStoreTabs() {
   const tabs = document.getElementById('sTabs');
-  if (!tabs) return;
-  const stores = Object.keys(state.groceries);
-  tabs.innerHTML = stores.map(s => `<button class="store-tab ${s===state.activeStore?'active':''}" onclick="switchStore('${s}')">${s}</button>`).join('');
+  if(!tabs) return;
+  tabs.innerHTML = Object.keys(state.groceries).map(s =>
+    '<button class="store-tab' + (s===state.activeStore?' active':'') + '" onclick="switchStore(\'' + s + '\')">' + s + '</button>'
+  ).join('');
 }
 
 function switchStore(name) {
@@ -948,138 +1062,205 @@ function switchStore(name) {
 
 function renderGroceryList() {
   const container = document.getElementById('grocItems');
-  if (!container) return;
-  const items = state.groceries[state.activeStore] || [];
-  if (!items.length) {
-    container.innerHTML = '<div class="empty-state"><span>🛒</span><p>List is empty! Add items below.</p></div>';
+  if(!container) return;
+  const items = (state.groceries[state.activeStore]||[]);
+  if(!items.length) {
+    container.innerHTML = '<div class="groc-empty">🛒 List is empty! Add items below.</div>';
     return;
   }
   const byCategory = {};
   items.forEach((item,idx) => {
-    const cat = item.category || 'Other';
-    if (!byCategory[cat]) byCategory[cat] = [];
-    byCategory[cat].push({...item, _idx: idx});
+    const cat = item.category||'Other';
+    if(!byCategory[cat]) byCategory[cat] = [];
+    byCategory[cat].push({...item, _idx:idx});
   });
-  container.innerHTML = Object.entries(byCategory).map(([cat, catItems]) => `
-    <div class="grocery-category">
-      <div class="category-header">${cat}</div>
-      ${catItems.map(item => `
-        <div class="grocery-item ${item.checked?'checked':''}">
-          <label class="item-check">
-            <input type="checkbox" ${item.checked?'checked':''} onchange="toggleGrocery('${state.activeStore}',${item._idx})">
-            <span>${item.name}</span>
-          </label>
-          <button class="btn-tiny danger" onclick="deleteGrocery('${state.activeStore}',${item._idx})">✕</button>
-        </div>`).join('')}
-    </div>`).join('');
+  container.innerHTML = Object.entries(byCategory).map(([cat,catItems]) =>
+    '<div class="groc-cat"><div class="cat-hdr">' + cat + '</div>' +
+    catItems.map(item =>
+      '<div class="groc-item' + (item.checked?' done':'') + '">' +
+      '<label class="groc-lbl"><input type="checkbox"' + (item.checked?' checked':'') + ' onchange="toggleGrocery(\'' + state.activeStore + '\',' + item._idx + ')">' +
+      '<span>' + item.name + '</span></label>' +
+      '<button class="btn-x" onclick="deleteGrocery(\'' + state.activeStore + '\',' + item._idx + ')">✕</button></div>'
+    ).join('') + '</div>'
+  ).join('');
 }
 
 function toggleGrocery(store, idx) {
-  state.groceries[store][idx].checked = !state.groceries[store][idx].checked;
-  saveAllData();
-  renderGroceryList();
-  renderTodayStats();
+  if(state.groceries[store] && state.groceries[store][idx]) {
+    state.groceries[store][idx].checked = !state.groceries[store][idx].checked;
+    saveAllData();
+    renderGroceryList();
+    updateStats();
+  }
 }
 
 function deleteGrocery(store, idx) {
-  state.groceries[store].splice(idx, 1);
-  saveAllData();
-  renderGroceryList();
+  if(state.groceries[store]) {
+    state.groceries[store].splice(idx,1);
+    saveAllData();
+    renderGroceryList();
+    updateStats();
+  }
 }
 
-function saveGroceryItem() {
-  const name = document.getElementById('gName').value.trim();
-  const cat = document.getElementById('gCat').value || 'Other';
-  const store = document.getElementById('gStore').value || state.activeStore;
-  if (!name) { showToast('Item name required'); return; }
-  if (!state.groceries[store]) state.groceries[store] = [];
-  state.groceries[store].push({ name, category: cat, checked: false, id: Date.now() });
-  saveAllData();
-  renderGrocery();
-  closeModal('modal-grocery');
-  showToast(name + ' added! 🛒');
-  clearForm('modal-grocery');
-}
-
-function quickAddGrocery() {
-  const input = document.getElementById('qAddIn');
-  if (!input || !input.value.trim()) return;
-  const name = input.value.trim();
-  if (!state.groceries[state.activeStore]) state.groceries[state.activeStore] = [];
-  state.groceries[state.activeStore].push({ name, category: 'Other', checked: false, id: Date.now() });
-  input.value = '';
-  saveAllData();
-  renderGroceryList();
-  showToast(name + ' added!');
-}
-
-function clearCheckedItems() {
+function clearChecked() {
   state.groceries[state.activeStore] = (state.groceries[state.activeStore]||[]).filter(i=>!i.checked);
   saveAllData();
   renderGroceryList();
-  showToast('Cleared checked items');
+  updateStats();
+  showToast('Cleared checked items ✅');
+}
+
+function openAddGrocModal() {
+  // Populate store and category dropdowns
+  const storeSel = document.getElementById('gStore');
+  if(storeSel) storeSel.innerHTML = Object.keys(state.groceries).map(s=>'<option value="'+s+'"'+(s===state.activeStore?' selected':'')+'>'+s+'</option>').join('');
+  const catSel = document.getElementById('gCat');
+  if(catSel) catSel.innerHTML = GROCERY_CATEGORIES.map(c=>'<option value="'+c+'">'+c+'</option>').join('');
+  // Show staples suggestions
+  renderStaplesSuggestions();
+  openModal('addGrocModal');
+}
+
+function renderStaplesSuggestions() {
+  const sugContainer = document.getElementById('staplesSugg');
+  if(!sugContainer) return;
+  const store = document.getElementById('gStore') ? document.getElementById('gStore').value : state.activeStore;
+  const storeStaples = state.staples.filter(s => !s.store || s.store === store);
+  if(!storeStaples.length) { sugContainer.style.display='none'; return; }
+  sugContainer.style.display = '';
+  const suggList = document.getElementById('staplesItems');
+  if(suggList) {
+    suggList.innerHTML = storeStaples.map((s,i) =>
+      '<button class="staple-chip" onclick="addStapleToList(' + i + ')">' + s.name + '</button>'
+    ).join('');
+  }
+}
+
+function saveGroc() {
+  const name = document.getElementById('gName').value.trim();
+  if(!name) { showToast('Item name required'); return; }
+  const qty = document.getElementById('gQty') ? document.getElementById('gQty').value.trim() : '';
+  const cat = document.getElementById('gCat').value || 'Other';
+  const store = document.getElementById('gStore').value || state.activeStore;
+  
+  const displayName = qty ? name + ' (' + qty + ')' : name;
+  if(!state.groceries[store]) state.groceries[store] = [];
+  state.groceries[store].push({name:displayName, category:cat, checked:false, id:Date.now()});
+  
+  // Save to staples if not already there
+  if(!state.staples.find(s=>s.name.toLowerCase()===name.toLowerCase())) {
+    state.staples.push({name, category:cat, store});
+    saveMiscData();
+  }
+  
+  saveAllData();
+  state.activeStore = store;
+  renderGrocery();
+  closeModal('addGrocModal');
+  document.getElementById('gName').value = '';
+  showToast(displayName + ' added to ' + store + '! 🛒');
+}
+
+function quickAddBtn() {
+  const input = document.getElementById('qAddIn');
+  if(!input || !input.value.trim()) return;
+  const name = input.value.trim();
+  if(!state.groceries[state.activeStore]) state.groceries[state.activeStore] = [];
+  state.groceries[state.activeStore].push({name, category:'Other', checked:false, id:Date.now()});
+  // Save to staples
+  if(!state.staples.find(s=>s.name.toLowerCase()===name.toLowerCase())) {
+    state.staples.push({name, category:'Other', store:state.activeStore});
+    saveMiscData();
+  }
+  input.value = '';
+  saveAllData();
+  renderGroceryList();
+  updateStats();
+  showToast(name + ' added!');
+}
+
+// Staples Repository
+function addStapleToList(idx) {
+  const staple = state.staples[idx];
+  if(!staple) return;
+  const store = staple.store || state.activeStore;
+  if(!state.groceries[store]) state.groceries[store] = [];
+  if(!state.groceries[store].find(i=>i.name.toLowerCase()===staple.name.toLowerCase())) {
+    state.groceries[store].push({name:staple.name, category:staple.category||'Other', checked:false, id:Date.now()});
+    saveAllData();
+    state.activeStore = store;
+    renderGrocery();
+    showToast(staple.name + ' added! 🛒');
+  } else {
+    showToast('Already on your list!');
+  }
+  closeModal('addGrocModal');
+}
+
+function deleteStaple(idx) {
+  state.staples.splice(idx,1);
+  saveMiscData();
+  showToast('Removed from staples');
 }
 
 // ---- KIDS TAB ----
 function renderKids() {
-  renderKidActivities('lily');
-  renderKidActivities('emma');
-  const n1 = state.settings.name1 || 'Lily';
-  const n2 = state.settings.name2 || 'Emma';
-  const h1 = document.getElementById('k1Nm');
-  const h2 = document.getElementById('k2Nm');
-  if (h1) h1.textContent = n1 + ' 🌟';
-  if (h2) h2.textContent = n2 + ' 🦋';
+  renderKidActivities(1);
+  renderKidActivities(2);
+  const s = state.settings;
+  const k1 = document.getElementById('k1Nm'); if(k1) k1.textContent = (s.kid1||'Lily') + ' 🌟';
+  const k2 = document.getElementById('k2Nm'); if(k2) k2.textContent = (s.kid2||'Emma') + ' 🦋';
 }
 
 function renderKidActivities(kid) {
-  const container = document.getElementById('activities-' + kid);
-  if (!container) return;
-  const acts = state.activities[kid] || [];
-  if (!acts.length) {
-    container.innerHTML = '<div class="empty-state small"><span>🎯</span><p>No activities yet. Add one!</p></div>';
+  const container = document.getElementById('k' + kid + 'Acts');
+  if(!container) return;
+  const acts = state.activities[kid]||[];
+  if(!acts.length) {
+    container.innerHTML = '<div class="ev-empty">🎯 No activities yet. Add one!</div>';
     return;
   }
-  container.innerHTML = acts.map((a,i) => `
-    <div class="activity-item">
-      <div class="activity-info">
-        <span class="activity-emoji">${a.emoji||'📌'}</span>
-        <div>
-          <div class="activity-name">${a.name}</div>
-          <div class="activity-meta">${(a.days||[]).join(', ')} ${a.time?'@ '+a.time:''} ${a.location?'· '+a.location:''}</div>
-        </div>
-      </div>
-      <button class="btn-tiny danger" onclick="deleteActivity('${kid}',${i})">✕</button>
-    </div>`).join('');
+  container.innerHTML = acts.map((a,i) =>
+    '<div class="act-item"><div class="act-info"><span class="act-emoji">' + (a.emoji||'📌') + '</span><div><div class="act-name">' + a.name + '</div><div class="act-meta">' + (a.days||[]).join(', ') + (a.time?' @ '+a.time:'') + (a.loc?' · '+a.loc:'') + '</div></div></div><button class="btn-x" onclick="deleteActivity(' + kid + ',' + i + ')">✕</button></div>'
+  ).join('');
 }
 
-function openAddActivity(kid) {
+function openAddActModal(kid) {
   document.getElementById('actKid').value = kid;
-  const label = document.getElementById('actKidLbl');
-  if (label) label.textContent = (kid === 'lily' ? (state.settings.name1||'Lily') : (state.settings.name2||'Emma'));
-  openModal('modal-activity');
+  // Populate type dropdown as tag pills
+  const actNoteEl = document.getElementById('actNote');
+  if(actNoteEl) actNoteEl.placeholder = 'Notes (e.g. bring cleats)';
+  openModal('addActModal');
 }
 
-function saveActivity() {
-  const kid = document.getElementById('actKid').value;
+function saveAct() {
+  const kid = parseInt(document.getElementById('actKid').value)||1;
   const name = document.getElementById('actNm').value.trim();
-  if (!name) { showToast('Activity name required'); return; }
-  const days = Array.from(document.querySelectorAll('#actDays input:checked')).map(c=>c.value);
+  if(!name) { showToast('Activity name required'); return; }
+  const daysCheckboxes = document.querySelectorAll('#actDay input:checked');
+  const days = Array.from(daysCheckboxes).map(cb=>cb.value);
   const time = document.getElementById('actTime').value;
-  const location = document.getElementById('actLoc').value.trim();
-  const emoji = document.getElementById('actNote').value.trim() || '📌';
-  if (!state.activities[kid]) state.activities[kid] = [];
-  state.activities[kid].push({ name, days, time, location, emoji });
+  const loc = document.getElementById('actLoc').value.trim();
+  const note = document.getElementById('actNote').value.trim();
+  const emoji = ACTIVITY_TYPES.includes(name) ? '📌' : '📌';
+  if(!state.activities[kid]) state.activities[kid] = [];
+  state.activities[kid].push({name,days,time,loc,note,emoji});
   saveAllData();
   renderKids();
   renderKidsToday();
-  closeModal('modal-activity');
+  closeModal('addActModal');
   showToast('Activity added! 🎯');
-  clearForm('modal-activity');
+  // Clear form
+  document.getElementById('actNm').value='';
+  document.querySelectorAll('#actDay input').forEach(cb=>cb.checked=false);
+  document.getElementById('actTime').value='';
+  document.getElementById('actLoc').value='';
+  if(document.getElementById('actNote')) document.getElementById('actNote').value='';
 }
 
 function deleteActivity(kid, idx) {
-  state.activities[kid].splice(idx, 1);
+  state.activities[kid].splice(idx,1);
   saveAllData();
   renderKids();
 }
@@ -1087,255 +1268,240 @@ function deleteActivity(kid, idx) {
 // ---- TASKS TAB ----
 function renderTasks(filter) {
   const container = document.getElementById('taskList');
-  if (!container) return;
+  if(!container) return;
   let tasks = state.tasks;
-  if (filter && filter !== 'all') tasks = tasks.filter(t => t.assignee === filter);
-  if (!tasks.length) {
-    container.innerHTML = '<div class="empty-state"><span>✅</span><p>All clear! Add a task below.</p></div>';
+  if(filter && filter !== 'all' && filter !== 'pending') {
+    tasks = tasks.filter(t => (t.assignee||'').toLowerCase() === filter.toLowerCase());
+  } else if(filter === 'pending') {
+    tasks = tasks.filter(t => !t.done);
+  }
+  if(!tasks.length) {
+    container.innerHTML = '<div class="ev-empty">✅ All clear! Add a task below.</div>';
     return;
   }
-  container.innerHTML = tasks.map((t,i) => `
-    <div class="task-item ${t.done?'done':''}">
-      <label class="task-check">
-        <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${i})">
-        <div>
-          <div class="task-name">${t.name}</div>
-          <div class="task-meta">${t.assignee||''} ${t.due?'· Due '+t.due:''} ${t.priority?'· '+t.priority:''}</div>
-        </div>
-      </label>
-      <button class="btn-tiny danger" onclick="deleteTask(${i})">✕</button>
-    </div>`).join('');
+  container.innerHTML = tasks.map((t,i) =>
+    '<div class="task-item' + (t.done?' done':'') + '">' +
+    '<label class="task-lbl"><input type="checkbox"' + (t.done?' checked':'') + ' onchange="toggleTask(' + i + ')"><div>' +
+    '<div class="task-nm">' + t.name + '</div>' +
+    '<div class="task-meta">' + [t.assignee,t.due?'Due '+t.due:'',t.priority].filter(Boolean).join(' · ') + '</div>' +
+    '</div></label>' +
+    '<button class="btn-x" onclick="deleteTask(' + i + ')">✕</button></div>'
+  ).join('');
 }
 
-function filterTasks(filter) {
+function filterTasks(filter, btn) {
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  const btn = document.querySelector(`[data-filter="${filter}"]`);
-  if (btn) btn.classList.add('active');
+  if(btn) btn.classList.add('active');
   renderTasks(filter);
 }
 
 function saveTask() {
   const name = document.getElementById('tNm').value.trim();
-  if (!name) { showToast('Task name required'); return; }
+  if(!name) { showToast('Task name required'); return; }
   const assignee = document.getElementById('tAssign').value;
-  const due = document.getElementById('tDue').value;
   const priority = document.getElementById('tPri').value;
-  state.tasks.push({ name, assignee, due, priority, done: false, id: Date.now() });
+  const due = document.getElementById('tDue').value;
+  state.tasks.push({name,assignee,priority,due,done:false,id:Date.now()});
   saveAllData();
   renderTasks();
-  renderTodayStats();
-  closeModal('modal-task');
+  updateStats();
+  closeModal('addTaskModal');
   showToast('Task added! ✅');
-  clearForm('modal-task');
+  document.getElementById('tNm').value='';
+  document.getElementById('tDue').value='';
 }
 
 function toggleTask(idx) {
   state.tasks[idx].done = !state.tasks[idx].done;
   saveAllData();
   renderTasks();
-  renderTodayStats();
+  updateStats();
 }
 
 function deleteTask(idx) {
-  state.tasks.splice(idx, 1);
+  state.tasks.splice(idx,1);
   saveAllData();
   renderTasks();
+  updateStats();
+}
+
+function clearDone() {
+  state.tasks = state.tasks.filter(t=>!t.done);
+  saveAllData();
+  renderTasks();
+  updateStats();
+  showToast('Done tasks cleared');
 }
 
 // ---- PET TAB ----
 function renderPet() {
-  const nameEl = document.getElementById('petNm');
-  if (nameEl) nameEl.textContent = state.settings.dogName || 'Biscuit';
-  renderPetReminders();
-  renderPetRoutine();
+  const s = state.settings;
+  const pn = document.getElementById('petNm'); if(pn) pn.textContent = s.petName||'Biscuit';
+  const pb = document.getElementById('petBr'); if(pb) pb.textContent = s.petBreed||'Dog';
+  renderPetToday();
+  renderPetRems();
 }
 
-function renderPetRoutine() {
-  const grid = document.getElementById('petRt');
-  if (!grid) return;
-  const routine = [
-    { time: 'Morning', tasks: ['Morning walk 🦮','Breakfast 🥣','Fresh water 💧'] },
-    { time: 'Afternoon', tasks: ['Midday walk 🦮','Playtime 🎾'] },
-    { time: 'Evening', tasks: ['Evening walk 🦮','Dinner 🥣','Brush teeth 🦷'] }
-  ];
-  grid.innerHTML = routine.map(r => `
-    <div class="routine-block">
-      <div class="routine-time">${r.time}</div>
-      ${r.tasks.map(t=>`<div class="routine-task">${t}</div>`).join('')}
-    </div>`).join('');
+function togglePetToday(key) {
+  state.petTasks[key] = !state.petTasks[key];
+  saveAllData();
+  renderPetToday();
 }
 
-function renderPetReminders() {
+function togglePetTask(key) {
+  togglePetToday(key);
+}
+
+function renderPetRems() {
   const container = document.getElementById('petRems');
-  if (!container) return;
-  if (!state.petReminders.length) {
-    container.innerHTML = '<div class="empty-state small"><span>🐾</span><p>No reminders yet</p></div>';
+  if(!container) return;
+  if(!state.petReminders.length) {
+    container.innerHTML = '<div class="ev-empty">🐾 No reminders yet</div>';
     return;
   }
-  container.innerHTML = state.petReminders.map((r,i) => `
-    <div class="reminder-item ${r.done?'done':''}">
-      <label class="task-check">
-        <input type="checkbox" ${r.done?'checked':''} onchange="togglePetReminder(${i})">
-        <span>${r.emoji||'🐾'} ${r.task} ${r.date?'· '+r.date:''}</span>
-      </label>
-      <button class="btn-tiny danger" onclick="deletePetReminder(${i})">✕</button>
-    </div>`).join('');
+  container.innerHTML = state.petReminders.map((r,i) =>
+    '<div class="rem-item' + (r.done?' done':'') + '">' +
+    '<label class="task-lbl"><input type="checkbox"' + (r.done?' checked':'') + ' onchange="togglePetRem(' + i + ')">' +
+    '<span>' + (r.emoji||'🐾') + ' ' + r.name + (r.date?' · '+r.date:'') + '</span></label>' +
+    '<button class="btn-x" onclick="deletePetRem(' + i + ')">✕</button></div>'
+  ).join('');
 }
 
-function savePetReminder() {
-  const task = document.getElementById('prNm').value.trim();
-  if (!task) { showToast('Reminder text required'); return; }
+function savePetRem() {
+  const name = document.getElementById('prNm').value.trim();
+  if(!name) { showToast('Reminder text required'); return; }
   const date = document.getElementById('prDate').value;
   const emoji = document.getElementById('prEmoji').value.trim() || '🐾';
-  state.petReminders.push({ task, date, emoji, done: false });
+  state.petReminders.push({name,date,emoji,done:false});
   saveAllData();
-  renderPet();
+  renderPetRems();
   renderPetToday();
-  closeModal('modal-pet-reminder');
+  closeModal('addPetRemModal');
   showToast('Reminder set! 🐾');
-  clearForm('modal-pet-reminder');
+  document.getElementById('prNm').value='';
+  document.getElementById('prDate').value='';
+  document.getElementById('prEmoji').value='';
 }
 
-function togglePetReminder(idx) {
+function togglePetRem(idx) {
   state.petReminders[idx].done = !state.petReminders[idx].done;
   saveAllData();
-  renderPet();
+  renderPetRems();
 }
 
-function togglePetTaskToday(idx) {
-  state.petReminders[idx].done = true;
+function deletePetRem(idx) {
+  state.petReminders.splice(idx,1);
   saveAllData();
-  renderPetToday();
-  renderPet();
+  renderPetRems();
 }
 
-function deletePetReminder(idx) {
-  state.petReminders.splice(idx, 1);
-  saveAllData();
-  renderPet();
+// Reset daily pet tasks at midnight
+function resetDailyPetTasks() {
+  const lastReset = localStorage.getItem('fh_petReset');
+  const today = new Date().toDateString();
+  if(lastReset !== today) {
+    state.petTasks = {fedAM:false,fedAfternoon:false,fedPM:false,walked:false,meds:false};
+    localStorage.setItem('fh_petReset', today);
+    saveAllData();
+  }
+}
+
+// ---- FAB BUTTON ----
+function fabAct() {
+  const tab = state.currentTab;
+  if(tab === 'meals') openModal('addRecModal');
+  else if(tab === 'grocery') openAddGrocModal();
+  else if(tab === 'kids') {
+    document.getElementById('actKid').value = 1;
+    openModal('addActModal');
+  }
+  else if(tab === 'tasks') openModal('addTaskModal');
+  else if(tab === 'pet') openModal('addPetRemModal');
+  else openModal('addTaskModal'); // default: today tab opens task modal
 }
 
 // ---- SETTINGS ----
 function openSettings() {
   const s = state.settings;
-  document.getElementById('sApiKey').value = s.gcalApiKey || '';
-  document.getElementById('sCalId').value = s.gcalId1 || '';
-  document.getElementById('sCalId2').value = s.gcalId2 || '';
-  document.getElementById('sS1').value = s.weatherKey || '';
-  document.getElementById('sS2').value = s.weatherCity || 'New York';
-  document.getElementById('sK1').value = s.name1 || 'Lily';
-  document.getElementById('sK2').value = s.name2 || 'Emma';
-  document.getElementById('sS3').value = s.age1 || '10';
-  document.getElementById('sS4').value = s.age2 || '4';
-  document.getElementById('sPetNm').value = s.dogName || 'Biscuit';
-  openModal('modal-settings');
+  const setVal = (id, val) => { const el=document.getElementById(id); if(el) el.value=val||''; };
+  setVal('sMom', s.momName); setVal('sDad', s.dadName);
+  setVal('sK1', s.kid1); setVal('sK2', s.kid2);
+  setVal('sPetNm', s.petName); setVal('sPetBr', s.petBreed);
+  setVal('sApiKey', s.apiKey); setVal('sCalId', s.calId); setVal('sCalId2', s.calId2);
+  setVal('sCity', s.weatherCity||s.city); setVal('sS1', s.weatherKey);
+  openModal('settingsModal');
 }
 
 function saveSettings() {
+  const getVal = id => { const el=document.getElementById(id); return el?el.value.trim():''; };
   state.settings = {
-    gcalApiKey: document.getElementById('sApiKey').value.trim(),
-    gcalId1: document.getElementById('sCalId').value.trim(),
-    gcalId2: document.getElementById('sCalId2').value.trim(),
-    weatherKey: document.getElementById('sS1').value.trim(),
-    weatherCity: document.getElementById('sS2').value.trim() || 'New York',
-    name1: document.getElementById('sK1').value.trim() || 'Lily',
-    name2: document.getElementById('sK2').value.trim() || 'Emma',
-    age1: document.getElementById('sS3').value,
-    age2: document.getElementById('sS4').value,
-    dogName: document.getElementById('sPetNm').value.trim() || 'Biscuit'
+    momName: getVal('sMom')||'Mom', dadName: getVal('sDad')||'Dad',
+    kid1: getVal('sK1')||'Lily', kid2: getVal('sK2')||'Emma',
+    petName: getVal('sPetNm')||'Biscuit', petBreed: getVal('sPetBr')||'Dog',
+    apiKey: getVal('sApiKey'), calId: getVal('sCalId'), calId2: getVal('sCalId2'),
+    weatherKey: getVal('sS1'), weatherCity: getVal('sCity')||'New York', city: getVal('sCity')||'New York'
   };
   saveAllData();
-  closeModal('modal-settings');
+  closeModal('settingsModal');
   fetchWeather();
   fetchCalendar();
-  renderAll();
+  applyNames();
   showToast('Settings saved! ⚙️');
 }
 
-// ---- FAB ----
-function fabAction() {
-  const tab = state.currentTab;
-  if (tab === 'meals') openModal('modal-recipe');
-  else if (tab === 'grocery') openModal('modal-grocery');
-  else if (tab === 'kids') openModal('modal-activity');
-  else if (tab === 'tasks') openModal('modal-task');
-  else if (tab === 'pet') openModal('modal-pet-reminder');
-  else openModal('modal-task');
+function exportData() {
+  const data = {recipes:state.recipes, groceries:state.groceries, staples:state.staples, tasks:state.tasks, activities:state.activities, petReminders:state.petReminders, mealPlan:state.mealPlan, settings:state.settings};
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='family-hub-backup.json'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Data exported! 📦');
 }
 
-// ---- Grocery modal store options ----
-function populateGroceryModal() {
-  const sel = document.getElementById('gStore');
-  if (!sel) return;
-  sel.innerHTML = Object.keys(state.groceries).map(s => `<option value="${s}" ${s===state.activeStore?'selected':''}>${s}</option>`).join('');
-  const catSel = document.getElementById('gCat');
-  if (catSel) catSel.innerHTML = CATEGORIES.map(c=>`<option>${c}</option>`).join('');
+function resetData() {
+  if(!confirm('Reset ALL data? This cannot be undone.')) return;
+  localStorage.clear();
+  location.reload();
 }
 
-// ---- Render All ----
-function renderAll() {
-  updateDateTime();
-  renderToday();
-  renderKids();
-  renderTodayStats();
-}
-
-// ---- Utils ----
-function clearForm(modalId) {
-  const m = document.getElementById(modalId);
-  if (!m) return;
-  m.querySelectorAll('input[type=text], input[type=time], input[type=date], textarea').forEach(el => el.value = '');
-  m.querySelectorAll('input[type=checkbox]').forEach(el => el.checked = false);
-}
-
-// ---- Persistence ----
+// ---- PERSISTENCE ----
 function saveAllData() {
   try {
     localStorage.setItem('fh_recipes', JSON.stringify(state.recipes));
     localStorage.setItem('fh_groceries', JSON.stringify(state.groceries));
     localStorage.setItem('fh_tasks', JSON.stringify(state.tasks));
     localStorage.setItem('fh_activities', JSON.stringify(state.activities));
-    localStorage.setItem('fh_petrem', JSON.stringify(state.petReminders));
+    localStorage.setItem('fh_petRems', JSON.stringify(state.petReminders));
     localStorage.setItem('fh_meals', JSON.stringify(state.mealPlan));
+    localStorage.setItem('fh_petTasks', JSON.stringify(state.petTasks));
     localStorage.setItem('fh_settings', JSON.stringify(state.settings));
+    localStorage.setItem('fh_staples', JSON.stringify(state.staples));
   } catch(e) { console.warn('Save failed', e); }
 }
 
+function saveMiscData() {
+  try { localStorage.setItem('fh_staples', JSON.stringify(state.staples)); } catch(e) {}
+}
+
 function loadAllData() {
-  try {
-    const r = localStorage.getItem('fh_recipes'); if (r) state.recipes = JSON.parse(r);
-    const g = localStorage.getItem('fh_groceries'); if (g) state.groceries = JSON.parse(g);
-    const t = localStorage.getItem('fh_tasks'); if (t) state.tasks = JSON.parse(t);
-    const a = localStorage.getItem('fh_activities'); if (a) state.activities = JSON.parse(a);
-    const p = localStorage.getItem('fh_petrem'); if (p) state.petReminders = JSON.parse(p);
-    const m = localStorage.getItem('fh_meals'); if (m) state.mealPlan = JSON.parse(m);
-  } catch(e) { console.warn('Load failed', e); }
+  const load = (key, def) => { try { const v=localStorage.getItem(key); return v?JSON.parse(v):def; } catch(e) { return def; } };
+  state.recipes = load('fh_recipes', []);
+  state.groceries = load('fh_groceries', {'Target':[],'Costco':[],'Whole Foods':[],'Other':[]});
+  state.tasks = load('fh_tasks', []);
+  state.activities = load('fh_activities', {1:[],2:[]});
+  state.petReminders = load('fh_petRems', []);
+  state.mealPlan = load('fh_meals', {Mon:'',Tue:'',Wed:'',Thu:'',Fri:'',Sat:'',Sun:''});
+  state.petTasks = load('fh_petTasks', {fedAM:false,fedAfternoon:false,fedPM:false,walked:false,meds:false});
+  state.staples = load('fh_staples', []);
+  resetDailyPetTasks();
 }
 
 function loadSettings() {
   try {
     const s = localStorage.getItem('fh_settings');
-    if (s) state.settings = {...state.settings, ...JSON.parse(s)};
+    if(s) state.settings = {...state.settings, ...JSON.parse(s)};
   } catch(e) {}
-}
-
-// ---- Export / Import ----
-function exportData() {
-  const data = {
-    recipes: state.recipes,
-    groceries: state.groceries,
-    tasks: state.tasks,
-    activities: state.activities,
-    petReminders: state.petReminders,
-    mealPlan: state.mealPlan,
-    settings: state.settings
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'family-hub-backup.json'; a.click();
-  URL.revokeObjectURL(url);
-  showToast('Data exported! 📦');
 }
 
 </script>
