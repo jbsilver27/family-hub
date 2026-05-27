@@ -853,10 +853,18 @@ function renderPetToday() {
   taskMap.forEach(function(t) {
     const done = !!tasks[t.key];
     if(done) doneCount++;
+    
+    // Update Today tab tiles
     const el = document.getElementById(t.elId);
     const vEl = document.getElementById(t.valId);
     if(el) el.classList.toggle('done', done);
     if(vEl) vEl.textContent = done ? t.doneText : 'Not yet';
+    
+    // Update Pet tab cards
+    const prtEl = document.getElementById('prt-' + t.key);
+    const prvEl = document.getElementById('prv-' + t.key);
+    if(prtEl) prtEl.classList.toggle('done', done);
+    if(prvEl) prvEl.textContent = done ? 'Done' : 'Not done';
   });
   
   const prog = document.getElementById('petProg');
