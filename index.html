@@ -2093,8 +2093,9 @@ function openAssignMeal(dayIdx) {
   if(picks) {
     if(!state.recipes||!state.recipes.length) { picks.innerHTML=''; }
     else {
-      picks.innerHTML = state.recipes.map(r =>
-        '<div class="staple-chip" onclick="document.getElementById('mealName').value=''+r.name.replace(/'/g,"\'")+''">'+escH(r.name)+'</div>'
+      window._recipeNames = (state.recipes||[]).map(r=>r.name);
+      picks.innerHTML = (state.recipes||[]).map((r,i) =>
+        '<div class="staple-chip" onclick="setMealRecipe('+i+')">'+escH(r.name)+'</div>'
       ).join('');
     }
   }
@@ -2110,6 +2111,11 @@ function saveMeal() {
   else delete state.meals[key];
   saveAll(); closeModal('mealModal'); renderWeekGrid(); renderDinnerBanner(); updateStats();
   showToast(name ? name+' planned! ️' : 'Meal cleared', name?'success':'');
+}
+function setMealRecipe(idx) {
+  const names = window._recipeNames || (state.recipes||[]).map(r=>r.name);
+  const name = names[idx];
+  if(name) document.getElementById('mealName').value = name;
 }
 
 // ===== RECIPES =====
