@@ -360,7 +360,7 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
   </div>
   <div class="section-card">
     <div class="section-header">
-      <div class="section-title">&#x1F43E; BISCUIT'S DAY</div>
+      <div class="section-title" id="petDayTitle">&#x1F43E; BISCUIT'S DAY</div>
       <div id="petTodayLbl" style="font-size:.78rem;font-weight:800;color:var(--gold);">0 / 5</div>
     </div>
     <div class="pet-tasks-grid">
@@ -916,7 +916,8 @@ function toggleMed(which){
 // ===== PET =====
 function renderPetToday(){
   const pn=document.getElementById('petHeroName');if(pn)pn.textContent=state.pet.name;
-  const pb2=document.getElementById('petHeroBreed');if(pb2)pb2.textContent=state.pet.breed||'Good boy';
+  const pb2=document.getElementById('petHeroBreed');
+  const ptitle=document.getElementById('petDayTitle');if(ptitle)ptitle.textContent='\uD83D\uDC3E '+state.pet.name+"'S DAY";if(pb2)pb2.textContent=state.pet.breed||'Good boy';
   const pt=state.pet.today;
   const map={fedAM:['ptAM','ptAMv'],fedAfternoon:['ptAfternoon','ptAfternoonv'],fedPM:['ptPM','ptPMv'],walked:['ptWk','ptWkv'],meds:['ptMed','ptMedv']};
   let done=0;
