@@ -285,6 +285,10 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
   .stat-strip{padding-bottom:16px;}
   .r-grid{grid-template-columns:repeat(3,1fr);}
 }
+
+.store-list{display:flex;flex-direction:column;gap:6px;margin-bottom:4px;}
+.store-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(0,0,0,0.04);border-radius:8px;font-size:14px;}
+.store-remove-btn{background:none;border:none;color:#ff7675;font-size:18px;cursor:pointer;padding:0 4px;line-height:1;}
 </style>
 </head>
 <body>
@@ -339,12 +343,12 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
       <div id="erickMedLbl" style="font-size:.78rem;font-weight:800;color:var(--indigo);">0 / 2</div>
     </div>
     <div class="meds-grid">
-      <div class="med-btn" id="medAM" onclick="toggleMed('AM')">
+      <div class="med-btn" id="medAM" onmousedown="startCareLP('med','AM',this)" onmouseup="endLP()" onmouseleave="endLP()" ontouchstart="startCareLP('med','AM',this)" ontouchend="endLP()">
         <div class="mb-icon">&#x1F305;</div>
         <div class="mb-label">Morning</div>
         <div class="mb-time" id="medAMv">Not yet</div>
       </div>
-      <div class="med-btn" id="medPM" onclick="toggleMed('PM')">
+      <div class="med-btn" id="medPM" onmousedown="startCareLP('med','PM',this)" onmouseup="endLP()" onmouseleave="endLP()" ontouchstart="startCareLP('med','PM',this)" ontouchend="endLP()">
         <div class="mb-icon">&#x1F319;</div>
         <div class="mb-label">Evening</div>
         <div class="mb-time" id="medPMv">Not yet</div>
@@ -364,11 +368,11 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
       <div id="petTodayLbl" style="font-size:.78rem;font-weight:800;color:var(--gold);">0 / 5</div>
     </div>
     <div class="pet-tasks-grid">
-      <div class="pet-task-btn" id="ptAM" onclick="togglePetToday('fedAM')"><div class="ptb-icon">&#x1F969;</div><div class="ptb-label">Morning</div><div class="ptb-time" id="ptAMv">Not yet</div></div>
-      <div class="pet-task-btn" id="ptAfternoon" onclick="togglePetToday('fedAfternoon')"><div class="ptb-icon">&#x1F33B;</div><div class="ptb-label">Afternoon</div><div class="ptb-time" id="ptAfternoonv">Not yet</div></div>
-      <div class="pet-task-btn" id="ptPM" onclick="togglePetToday('fedPM')"><div class="ptb-icon">&#x1F319;</div><div class="ptb-label">Evening</div><div class="ptb-time" id="ptPMv">Not yet</div></div>
-      <div class="pet-task-btn" id="ptWk" onclick="togglePetToday('walked')"><div class="ptb-icon">&#x1F415;</div><div class="ptb-label">Walk</div><div class="ptb-time" id="ptWkv">Not yet</div></div>
-      <div class="pet-task-btn" id="ptMed" onclick="togglePetToday('meds')"><div class="ptb-icon">&#x1F48A;</div><div class="ptb-label">Meds</div><div class="ptb-time" id="ptMedv">Not yet</div></div>
+      <div class="pet-task-btn" id="ptAM" onmousedown="startCareLP('pet','fedAM',this)" onmouseup="endLP()" onmouseleave="endLP()" ontouchstart="startCareLP('pet','fedAM',this)" ontouchend="endLP()"><div class="ptb-icon">&#x1F969;</div><div class="ptb-label">Morning</div><div class="ptb-time" id="ptAMv">Not yet</div></div>
+      <div class="pet-task-btn" id="ptAfternoon" onmousedown="startCareLP('pet','fedAfternoon',this)" onmouseup="endLP()" onmouseleave="endLP()" ontouchstart="startCareLP('pet','fedAfternoon',this)" ontouchend="endLP()"><div class="ptb-icon">&#x1F33B;</div><div class="ptb-label">Afternoon</div><div class="ptb-time" id="ptAfternoonv">Not yet</div></div>
+      <div class="pet-task-btn" id="ptPM" onmousedown="startCareLP('pet','fedPM',this)" onmouseup="endLP()" onmouseleave="endLP()" ontouchstart="startCareLP('pet','fedPM',this)" ontouchend="endLP()"><div class="ptb-icon">&#x1F319;</div><div class="ptb-label">Evening</div><div class="ptb-time" id="ptPMv">Not yet</div></div>
+      <div class="pet-task-btn" id="ptWk" onmousedown="startCareLP('pet','walked',this)" onmouseup="endLP()" onmouseleave="endLP()" ontouchstart="startCareLP('pet','walked',this)" ontouchend="endLP()"><div class="ptb-icon">&#x1F415;</div><div class="ptb-label">Walk</div><div class="ptb-time" id="ptWkv">Not yet</div></div>
+      <div class="pet-task-btn" id="ptMed" onmousedown="startCareLP('pet','meds',this)" onmouseup="endLP()" onmouseleave="endLP()" ontouchstart="startCareLP('pet','meds',this)" ontouchend="endLP()"><div class="ptb-icon">&#x1F48A;</div><div class="ptb-label">Meds</div><div class="ptb-time" id="ptMedv">Not yet</div></div>
     </div>
     <div class="prog-bar"><div class="prog-fill" id="petProg" style="width:0%"></div></div>
   </div>
@@ -473,11 +477,11 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
       <div id="petProg2" style="font-size:.78rem;font-weight:800;color:var(--gold);"></div>
     </div>
     <div class="pet-tasks-grid">
-      <div class="pet-task-btn" id="prt-fedAM" onclick="togglePetToday('fedAM')"><div class="ptb-icon">&#x1F969;</div><div class="ptb-label">Morning Feed</div><div class="ptb-time" id="prv-fedAM">Not yet</div></div>
-      <div class="pet-task-btn" id="prt-fedAfternoon" onclick="togglePetToday('fedAfternoon')"><div class="ptb-icon">&#x1F33B;</div><div class="ptb-label">Afternoon Feed</div><div class="ptb-time" id="prv-fedAfternoon">Not yet</div></div>
-      <div class="pet-task-btn" id="prt-fedPM" onclick="togglePetToday('fedPM')"><div class="ptb-icon">&#x1F319;</div><div class="ptb-label">Evening Feed</div><div class="ptb-time" id="prv-fedPM">Not yet</div></div>
-      <div class="pet-task-btn" id="prt-walked" onclick="togglePetToday('walked')"><div class="ptb-icon">&#x1F415;</div><div class="ptb-label">Walk</div><div class="ptb-time" id="prv-walked">Not yet</div></div>
-      <div class="pet-task-btn" id="prt-meds" onclick="togglePetToday('meds')"><div class="ptb-icon">&#x1F48A;</div><div class="ptb-label">Meds</div><div class="ptb-time" id="prv-meds">Not yet</div></div>
+      <div class="pet-task-btn" id="prt-fedAM" onmousedown="startCareLP('pet','fedAM',this)" onmouseup="endLP()" onmouseleave="endLP()" ontouchstart="startCareLP('pet','fedAM',this)" ontouchend="endLP()"><div class="ptb-icon">&#x1F969;</div><div class="ptb-label">Morning Feed</div><div class="ptb-time" id="prv-fedAM">Not yet</div></div>
+      <div class="pet-task-btn" id="prt-fedAfternoon" onmousedown="startCareLP('pet','fedAfternoon',this)" onmouseup="endLP()" onmouseleave="endLP()" ontouchstart="startCareLP('pet','fedAfternoon',this)" ontouchend="endLP()"><div class="ptb-icon">&#x1F33B;</div><div class="ptb-label">Afternoon Feed</div><div class="ptb-time" id="prv-fedAfternoon">Not yet</div></div>
+      <div class="pet-task-btn" id="prt-fedPM" onmousedown="startCareLP('pet','fedPM',this)" onmouseup="endLP()" onmouseleave="endLP()" ontouchstart="startCareLP('pet','fedPM',this)" ontouchend="endLP()"><div class="ptb-icon">&#x1F319;</div><div class="ptb-label">Evening Feed</div><div class="ptb-time" id="prv-fedPM">Not yet</div></div>
+      <div class="pet-task-btn" id="prt-walked" onmousedown="startCareLP('pet','walked',this)" onmouseup="endLP()" onmouseleave="endLP()" ontouchstart="startCareLP('pet','walked',this)" ontouchend="endLP()"><div class="ptb-icon">&#x1F415;</div><div class="ptb-label">Walk</div><div class="ptb-time" id="prv-walked">Not yet</div></div>
+      <div class="pet-task-btn" id="prt-meds" onmousedown="startCareLP('pet','meds',this)" onmouseup="endLP()" onmouseleave="endLP()" ontouchstart="startCareLP('pet','meds',this)" ontouchend="endLP()"><div class="ptb-icon">&#x1F48A;</div><div class="ptb-label">Meds</div><div class="ptb-time" id="prv-meds">Not yet</div></div>
     </div>
   </div>
   <div class="section-card">
@@ -638,7 +642,7 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
     <div class="settings-section-title">Weather Location</div>
     <div class="settings-row"><span class="settings-row-label">City, State</span><input id="sWeatherLoc" value="San Francisco, CA"></div>
   </div>
-  <div class="settings-section">
+  <div class="settings-section"><div class="settings-section-title">Grocery Stores</div><div id="storeList" class="store-list"></div><div class="settings-row" style="gap:8px;margin-top:8px"><input id="newStoreName" placeholder="Add a store..." class="field-input" style="flex:1"><button class="btn-secondary" style="padding:8px 14px;font-size:13px" onclick="addStore()">+ Add</button></div></div><div class="settings-section">
     <div class="settings-section-title">Google Calendar (Free ICS Sync)</div>
     <div class="gcal-info">
       <strong>How to connect:</strong> In Google Calendar, open your calendar settings, find <em>"Integrate calendar"</em>, and copy the <em>Secret address in iCal format</em> URL. Paste it below. Events will auto-load every time the page opens. Free forever, no API key needed.
@@ -1087,7 +1091,7 @@ function parseICSTime(s){
 // ===== EVENTS =====
 function openAddEventModal(){
   document.getElementById('evTitle').value='';document.getElementById('evNote').value='';
-  document.getElementById('evRecur').value='none';document.getElementById('evWho').value='Family';
+  document.getElementById('evRecur').value='none';const evWS=document.getElementById('evWho');const sEv=state.settings||{};evWS.innerHTML='<option>Family</option><option>'+sEv.p1+'</option><option>'+sEv.p2+'</option><option>'+sEv.k1+'</option><option>'+sEv.k2+'</option><option>'+sEv.petName+'</option>';evWS.value='Family';
   const n=new Date();const y=n.getFullYear();const m=String(n.getMonth()+1).padStart(2,'0');const d=String(n.getDate()).padStart(2,'0');
   document.getElementById('evDate').value=y+'-'+m+'-'+d;document.getElementById('evTime').value='';
   openModal('addEventModal');
@@ -1379,7 +1383,7 @@ function taskHTML(t){
 
 function openAddTaskModal(){
   document.getElementById('taskTitle').value='';document.getElementById('taskNote').value='';
-  document.getElementById('taskWho').value='Anyone';document.getElementById('taskPrio').value='normal';
+  const twS=document.getElementById('taskWho');const sTw=state.settings||{};twS.innerHTML='<option value="Anyone">Anyone</option><option>'+sTw.p1+'</option><option>'+sTw.p2+'</option><option value="Both">Both</option>';twS.value='Anyone';document.getElementById('taskPrio').value='normal';
   document.getElementById('taskBucket').value=state._taskBucket==='all'?'today':state._taskBucket;
   openModal('addTaskModal');
 }
@@ -1450,6 +1454,7 @@ function openSettings(){
   document.getElementById('sPetName').value=s.petName||'Biscuit';document.getElementById('sPetBreed').value=s.petBreed||'Good boy';
   document.getElementById('sWeatherLoc').value=s.weatherLoc||'San Francisco, CA';
   document.getElementById('sIcs1').value=s.ics1||'';document.getElementById('sIcs2').value=s.ics2||'';
+  const slEl=document.getElementById('storeList');if(slEl){slEl.innerHTML=(s.stores||[]).map((st,i)=>'<div class="store-item"><span>'+st+'</span><button class="store-remove-btn" onclick="removeStore('+i+')">\u00D7</button></div>').join('');}
   openModal('settingsModal');
 }
 function saveSettings(){
@@ -1483,6 +1488,12 @@ function exportData(){const json=JSON.stringify({exported:new Date().toISOString
 function resetData(){if(!confirm('Reset ALL data? This cannot be undone!'))return;localStorage.removeItem(SK);location.reload();}
 
 // ===== BOOT =====
+function addStore(){var inp=document.getElementById('newStoreName');var nm=(inp?inp.value:'').trim();if(!nm)return;if(!state.settings.stores)state.settings.stores=[];if(!state.settings.stores.includes(nm)){state.settings.stores.push(nm);saveAll();renderGrocery();}if(inp)inp.value='';var sl=document.getElementById('storeList');if(sl)sl.innerHTML=(state.settings.stores||[]).map((st,i)=>'<div class="store-item"><span>'+st+'</span><button class="store-remove-btn" onclick="removeStore('+i+')">\u00D7</button></div>').join('');}
+function removeStore(i){if(!state.settings.stores)return;state.settings.stores.splice(Number(i),1);saveAll();renderGrocery();var sl=document.getElementById('storeList');if(sl)sl.innerHTML=(state.settings.stores||[]).map((st,idx)=>'<div class="store-item"><span>'+st+'</span><button class="store-remove-btn" onclick="removeStore('+idx+')">\u00D7</button></div>').join('');}
+var _lpTimer=null,_lpType=null,_lpKey=null;
+function startCareLP(type,key,el){_lpType=type;_lpKey=key;_lpTimer=setTimeout(function(){_lpTimer=null;editCareTime(type,key);},600);}
+function endLP(){if(_lpTimer){clearTimeout(_lpTimer);if(_lpType==='pet')togglePetToday(_lpKey);else if(_lpType==='med')toggleMed(_lpKey);_lpTimer=null;}}
+function editCareTime(type,key){var lbl=type==='pet'?({fedAM:'Morning Feed',fedAfternoon:'Afternoon Feed',fedPM:'Evening Feed',walked:'Walk',meds:'Meds'}[key]||key):(key+' Meds');var cur=type==='pet'?(state.pet.today[key+'_time']||''):(state.meds[key+'_time']||'');var t=prompt('Edit time for '+lbl+' (e.g. 7:30 AM), or clear to uncheck:',cur||'');if(t===null)return;if(type==='pet'){state.pet.today[key]=t.length>0;state.pet.today[key+'_time']=t;saveAll();renderPetToday();renderPet();}else{state.meds.today[key]=t.length>0;state.meds[key+'_time']=t;saveAll();renderMeds();}}
 document.addEventListener('DOMContentLoaded',()=>{
   loadAll();updateDateTime();setInterval(updateDateTime,60000);
   renderToday();
