@@ -613,9 +613,9 @@ function updateDateTime() {
   const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const dateStr = days[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate();
-  const el = document.getElementById('current-date');
+  const el = document.getElementById('dayPill');
   if (el) el.textContent = dateStr;
-  const greetEl = document.getElementById('greeting');
+  const greetEl = document.getElementById('greet');
   if (greetEl) {
     const h = now.getHours();
     greetEl.textContent = h < 12 ? 'Good Morning! ☀️' : h < 17 ? 'Good Afternoon! 🌤️' : 'Good Evening! 🌙';
@@ -625,11 +625,11 @@ function updateDateTime() {
 // ---- Tab Navigation ----
 function showTab(name) {
   state.currentTab = name;
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  const tab = document.getElementById('tab-' + name);
+  document.querySelectorAll('.tc').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
+  const tab = document.getElementById('tc-' + name);
   if (tab) tab.classList.add('active');
-  const btn = document.querySelector('[data-tab="' + name + '"]');
+  const btn = document.getElementById('nb-' + name);
   if (btn) btn.classList.add('active');
   if (name === 'today') renderToday();
   if (name === 'meals') renderMeals();
@@ -665,8 +665,8 @@ function showToast(msg) {
 async function fetchWeather() {
   const key = state.settings.weatherKey;
   const city = state.settings.weatherCity || 'New York';
-  const pill = document.getElementById('weather-pill');
-  const card = document.getElementById('weather-card');
+  const pill = document.getElementById('wPill');
+  const card = document.getElementById('wCard');
   if (!key) {
     if (pill) pill.textContent = '🌤️ Add weather key in settings';
     if (card) card.innerHTML = '<div class="weather-no-key"><p>Add your free OpenWeatherMap API key in Settings to see live weather.</p></div>';
@@ -742,7 +742,7 @@ function renderToday() {
 }
 
 function renderSchedule() {
-  const container = document.getElementById('schedule-list');
+  const container = document.getElementById('evList');
   if (!container) return;
   const events = state.calendarEvents;
   if (!events.length) {
@@ -763,9 +763,9 @@ function renderSchedule() {
 }
 
 function renderTodayStats() {
-  const evEl = document.getElementById('stat-events');
-  const tkEl = document.getElementById('stat-tasks');
-  const grEl = document.getElementById('stat-grocery');
+  const evEl = document.getElementById('qEvents');
+  const tkEl = document.getElementById('qTasks');
+  const grEl = document.getElementById('qGroc');
   if (evEl) evEl.textContent = state.calendarEvents.length;
   if (tkEl) tkEl.textContent = state.tasks.filter(t=>!t.done).length;
   if (grEl) {
@@ -776,7 +776,7 @@ function renderTodayStats() {
 }
 
 function renderDinnerBanner() {
-  const el = document.getElementById('dinner-banner-meal');
+  const el = document.getElementById('dBanN');
   if (!el) return;
   const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const today = days[new Date().getDay()];
@@ -785,12 +785,12 @@ function renderDinnerBanner() {
 }
 
 function renderKidsToday() {
-  const c1 = document.getElementById('kids-today-lily');
-  const c2 = document.getElementById('kids-today-emma');
+  const c1 = document.getElementById('k1Acts');
+  const c2 = document.getElementById('k2Acts');
   const n1 = state.settings.name1 || 'Lily';
   const n2 = state.settings.name2 || 'Emma';
-  const h1 = document.getElementById('kids-today-name1');
-  const h2 = document.getElementById('kids-today-name2');
+  const h1 = document.getElementById('k1Nm');
+  const h2 = document.getElementById('k2Nm');
   if (h1) h1.textContent = n1 + ' Today';
   if (h2) h2.textContent = n2 + ' Today';
   const today = new Date().toLocaleDateString('en-US',{weekday:'long'});
@@ -805,7 +805,7 @@ function renderKidsToday() {
 }
 
 function renderPetToday() {
-  const el = document.getElementById('pet-today-list');
+  const el = document.getElementById('petTodayLbl');
   if (!el) return;
   const reminders = state.petReminders.filter(r=>!r.done);
   el.innerHTML = reminders.length
@@ -820,7 +820,7 @@ function renderMeals() {
 }
 
 function renderWeekGrid() {
-  const grid = document.getElementById('week-grid');
+  const grid = document.getElementById('wkGrid');
   if (!grid) return;
   const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const today = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date().getDay()];
@@ -835,7 +835,7 @@ function renderWeekGrid() {
 }
 
 function renderRecipeLibrary() {
-  const grid = document.getElementById('recipe-grid');
+  const grid = document.getElementById('rGrid');
   if (!grid) return;
   if (!state.recipes.length) {
     grid.innerHTML = '<div class="empty-state"><span>🍽️</span><p>No recipes yet. Click + to add your first recipe!</p></div>';
@@ -854,22 +854,22 @@ function renderRecipeLibrary() {
 }
 
 function openAssignMeal(day) {
-  document.getElementById('assign-day-label').textContent = day;
-  document.getElementById('assign-day-input').value = day;
-  const sel = document.getElementById('assign-recipe-select');
+  document.getElementById('assignTitle').textContent = day;
+  document.getElementById('dayPicker').value = day;
+  const sel = document.getElementById('assignRecSel');
   sel.innerHTML = '<option value="">-- type or pick --</option>' + state.recipes.map((r,i)=>`<option value="${r.name}">${r.emoji||''} ${r.name}</option>`).join('');
   openModal('modal-assign');
 }
 
 function openAssignMealFromRecipe(idx) {
   const r = state.recipes[idx];
-  document.getElementById('assign-recipe-select').value = r.name;
+  document.getElementById('assignRecSel').value = r.name;
   openModal('modal-assign');
 }
 
 function saveAssignMeal() {
-  const day = document.getElementById('assign-day-input').value;
-  const meal = document.getElementById('assign-recipe-select').value || document.getElementById('assign-custom-input').value;
+  const day = document.getElementById('dayPicker').value;
+  const meal = document.getElementById('assignRecSel').value || document.getElementById('assignCustom').value;
   if (!day || !meal) { showToast('Please select a day and meal'); return; }
   state.mealPlan[day] = meal;
   saveAllData();
@@ -880,12 +880,14 @@ function saveAssignMeal() {
 }
 
 function saveRecipe() {
-  const name = document.getElementById('rec-name').value.trim();
+  const name = document.getElementById('recNm').value.trim();
   if (!name) { showToast('Recipe name required'); return; }
-  const ingredients = document.getElementById('rec-ingredients').value.trim().split('\n').filter(Boolean);
-  const instructions = document.getElementById('rec-instructions').value.trim();
-  const tags = document.getElementById('rec-tags').value.trim().split(',').map(t=>t.trim()).filter(Boolean);
-  const emoji = document.getElementById('rec-emoji').value.trim() || '🍽️';
+  const ingContainer = document.getElementById('ingRows');
+  const ingInputs = ingContainer ? ingContainer.querySelectorAll('input[type=text]') : [];
+  const ingredients = Array.from(ingInputs).map(i=>i.value.trim()).filter(Boolean);
+  const instructions = document.getElementById('recNotes').value.trim();
+  const tags = document.getElementById('recTags').value.trim().split(',').map(t=>t.trim()).filter(Boolean);
+  const emoji = document.getElementById('recEmoji').value.trim() || '🍽️';
   state.recipes.push({ name, ingredients, instructions, tags, emoji });
   saveAllData();
   renderRecipeLibrary();
@@ -896,10 +898,10 @@ function saveRecipe() {
 
 function viewRecipe(idx) {
   const r = state.recipes[idx];
-  document.getElementById('detail-name').textContent = r.emoji + ' ' + r.name;
-  document.getElementById('detail-ingredients').innerHTML = (r.ingredients||[]).map(i=>`
+  document.getElementById('rdN').textContent = r.emoji + ' ' + r.name;
+  document.getElementById('rdIngs').innerHTML = (r.ingredients||[]).map(i=>`
     <li>${i} <button class="btn-tiny" onclick="addIngredientToGrocery('${i.replace(/'/g,"\\'")}')">+ Grocery</button></li>`).join('');
-  document.getElementById('detail-instructions').textContent = r.instructions || 'No instructions added.';
+  document.getElementById('rdNotes').textContent = r.instructions || 'No instructions added.';
   openModal('modal-recipe-detail');
 }
 
@@ -932,7 +934,7 @@ function renderGrocery() {
 }
 
 function renderStoreTabs() {
-  const tabs = document.getElementById('store-tabs');
+  const tabs = document.getElementById('sTabs');
   if (!tabs) return;
   const stores = Object.keys(state.groceries);
   tabs.innerHTML = stores.map(s => `<button class="store-tab ${s===state.activeStore?'active':''}" onclick="switchStore('${s}')">${s}</button>`).join('');
@@ -945,7 +947,7 @@ function switchStore(name) {
 }
 
 function renderGroceryList() {
-  const container = document.getElementById('grocery-items');
+  const container = document.getElementById('grocItems');
   if (!container) return;
   const items = state.groceries[state.activeStore] || [];
   if (!items.length) {
@@ -986,9 +988,9 @@ function deleteGrocery(store, idx) {
 }
 
 function saveGroceryItem() {
-  const name = document.getElementById('groc-name').value.trim();
-  const cat = document.getElementById('groc-cat').value || 'Other';
-  const store = document.getElementById('groc-store').value || state.activeStore;
+  const name = document.getElementById('gName').value.trim();
+  const cat = document.getElementById('gCat').value || 'Other';
+  const store = document.getElementById('gStore').value || state.activeStore;
   if (!name) { showToast('Item name required'); return; }
   if (!state.groceries[store]) state.groceries[store] = [];
   state.groceries[store].push({ name, category: cat, checked: false, id: Date.now() });
@@ -1000,7 +1002,7 @@ function saveGroceryItem() {
 }
 
 function quickAddGrocery() {
-  const input = document.getElementById('quick-add-input');
+  const input = document.getElementById('qAddIn');
   if (!input || !input.value.trim()) return;
   const name = input.value.trim();
   if (!state.groceries[state.activeStore]) state.groceries[state.activeStore] = [];
@@ -1024,8 +1026,8 @@ function renderKids() {
   renderKidActivities('emma');
   const n1 = state.settings.name1 || 'Lily';
   const n2 = state.settings.name2 || 'Emma';
-  const h1 = document.getElementById('kid-header-1');
-  const h2 = document.getElementById('kid-header-2');
+  const h1 = document.getElementById('k1Nm');
+  const h2 = document.getElementById('k2Nm');
   if (h1) h1.textContent = n1 + ' 🌟';
   if (h2) h2.textContent = n2 + ' 🦋';
 }
@@ -1052,20 +1054,20 @@ function renderKidActivities(kid) {
 }
 
 function openAddActivity(kid) {
-  document.getElementById('act-kid').value = kid;
-  const label = document.getElementById('act-kid-label');
+  document.getElementById('actKid').value = kid;
+  const label = document.getElementById('actKidLbl');
   if (label) label.textContent = (kid === 'lily' ? (state.settings.name1||'Lily') : (state.settings.name2||'Emma'));
   openModal('modal-activity');
 }
 
 function saveActivity() {
-  const kid = document.getElementById('act-kid').value;
-  const name = document.getElementById('act-name').value.trim();
+  const kid = document.getElementById('actKid').value;
+  const name = document.getElementById('actNm').value.trim();
   if (!name) { showToast('Activity name required'); return; }
-  const days = Array.from(document.querySelectorAll('#act-days input:checked')).map(c=>c.value);
-  const time = document.getElementById('act-time').value;
-  const location = document.getElementById('act-location').value.trim();
-  const emoji = document.getElementById('act-emoji').value.trim() || '📌';
+  const days = Array.from(document.querySelectorAll('#actDays input:checked')).map(c=>c.value);
+  const time = document.getElementById('actTime').value;
+  const location = document.getElementById('actLoc').value.trim();
+  const emoji = document.getElementById('actNote').value.trim() || '📌';
   if (!state.activities[kid]) state.activities[kid] = [];
   state.activities[kid].push({ name, days, time, location, emoji });
   saveAllData();
@@ -1084,7 +1086,7 @@ function deleteActivity(kid, idx) {
 
 // ---- TASKS TAB ----
 function renderTasks(filter) {
-  const container = document.getElementById('task-list');
+  const container = document.getElementById('taskList');
   if (!container) return;
   let tasks = state.tasks;
   if (filter && filter !== 'all') tasks = tasks.filter(t => t.assignee === filter);
@@ -1113,11 +1115,11 @@ function filterTasks(filter) {
 }
 
 function saveTask() {
-  const name = document.getElementById('task-name').value.trim();
+  const name = document.getElementById('tNm').value.trim();
   if (!name) { showToast('Task name required'); return; }
-  const assignee = document.getElementById('task-assignee').value;
-  const due = document.getElementById('task-due').value;
-  const priority = document.getElementById('task-priority').value;
+  const assignee = document.getElementById('tAssign').value;
+  const due = document.getElementById('tDue').value;
+  const priority = document.getElementById('tPri').value;
   state.tasks.push({ name, assignee, due, priority, done: false, id: Date.now() });
   saveAllData();
   renderTasks();
@@ -1142,14 +1144,14 @@ function deleteTask(idx) {
 
 // ---- PET TAB ----
 function renderPet() {
-  const nameEl = document.getElementById('pet-name-display');
+  const nameEl = document.getElementById('petNm');
   if (nameEl) nameEl.textContent = state.settings.dogName || 'Biscuit';
   renderPetReminders();
   renderPetRoutine();
 }
 
 function renderPetRoutine() {
-  const grid = document.getElementById('pet-routine-grid');
+  const grid = document.getElementById('petRt');
   if (!grid) return;
   const routine = [
     { time: 'Morning', tasks: ['Morning walk 🦮','Breakfast 🥣','Fresh water 💧'] },
@@ -1164,7 +1166,7 @@ function renderPetRoutine() {
 }
 
 function renderPetReminders() {
-  const container = document.getElementById('pet-reminders-list');
+  const container = document.getElementById('petRems');
   if (!container) return;
   if (!state.petReminders.length) {
     container.innerHTML = '<div class="empty-state small"><span>🐾</span><p>No reminders yet</p></div>';
@@ -1181,10 +1183,10 @@ function renderPetReminders() {
 }
 
 function savePetReminder() {
-  const task = document.getElementById('pet-rem-task').value.trim();
+  const task = document.getElementById('prNm').value.trim();
   if (!task) { showToast('Reminder text required'); return; }
-  const date = document.getElementById('pet-rem-date').value;
-  const emoji = document.getElementById('pet-rem-emoji').value.trim() || '🐾';
+  const date = document.getElementById('prDate').value;
+  const emoji = document.getElementById('prEmoji').value.trim() || '🐾';
   state.petReminders.push({ task, date, emoji, done: false });
   saveAllData();
   renderPet();
@@ -1216,31 +1218,31 @@ function deletePetReminder(idx) {
 // ---- SETTINGS ----
 function openSettings() {
   const s = state.settings;
-  document.getElementById('set-gcal-key').value = s.gcalApiKey || '';
-  document.getElementById('set-gcal-id1').value = s.gcalId1 || '';
-  document.getElementById('set-gcal-id2').value = s.gcalId2 || '';
-  document.getElementById('set-weather-key').value = s.weatherKey || '';
-  document.getElementById('set-weather-city').value = s.weatherCity || 'New York';
-  document.getElementById('set-name1').value = s.name1 || 'Lily';
-  document.getElementById('set-name2').value = s.name2 || 'Emma';
-  document.getElementById('set-age1').value = s.age1 || '10';
-  document.getElementById('set-age2').value = s.age2 || '4';
-  document.getElementById('set-dog').value = s.dogName || 'Biscuit';
+  document.getElementById('sApiKey').value = s.gcalApiKey || '';
+  document.getElementById('sCalId').value = s.gcalId1 || '';
+  document.getElementById('sCalId2').value = s.gcalId2 || '';
+  document.getElementById('sS1').value = s.weatherKey || '';
+  document.getElementById('sS2').value = s.weatherCity || 'New York';
+  document.getElementById('sK1').value = s.name1 || 'Lily';
+  document.getElementById('sK2').value = s.name2 || 'Emma';
+  document.getElementById('sS3').value = s.age1 || '10';
+  document.getElementById('sS4').value = s.age2 || '4';
+  document.getElementById('sPetNm').value = s.dogName || 'Biscuit';
   openModal('modal-settings');
 }
 
 function saveSettings() {
   state.settings = {
-    gcalApiKey: document.getElementById('set-gcal-key').value.trim(),
-    gcalId1: document.getElementById('set-gcal-id1').value.trim(),
-    gcalId2: document.getElementById('set-gcal-id2').value.trim(),
-    weatherKey: document.getElementById('set-weather-key').value.trim(),
-    weatherCity: document.getElementById('set-weather-city').value.trim() || 'New York',
-    name1: document.getElementById('set-name1').value.trim() || 'Lily',
-    name2: document.getElementById('set-name2').value.trim() || 'Emma',
-    age1: document.getElementById('set-age1').value,
-    age2: document.getElementById('set-age2').value,
-    dogName: document.getElementById('set-dog').value.trim() || 'Biscuit'
+    gcalApiKey: document.getElementById('sApiKey').value.trim(),
+    gcalId1: document.getElementById('sCalId').value.trim(),
+    gcalId2: document.getElementById('sCalId2').value.trim(),
+    weatherKey: document.getElementById('sS1').value.trim(),
+    weatherCity: document.getElementById('sS2').value.trim() || 'New York',
+    name1: document.getElementById('sK1').value.trim() || 'Lily',
+    name2: document.getElementById('sK2').value.trim() || 'Emma',
+    age1: document.getElementById('sS3').value,
+    age2: document.getElementById('sS4').value,
+    dogName: document.getElementById('sPetNm').value.trim() || 'Biscuit'
   };
   saveAllData();
   closeModal('modal-settings');
@@ -1263,10 +1265,10 @@ function fabAction() {
 
 // ---- Grocery modal store options ----
 function populateGroceryModal() {
-  const sel = document.getElementById('groc-store');
+  const sel = document.getElementById('gStore');
   if (!sel) return;
   sel.innerHTML = Object.keys(state.groceries).map(s => `<option value="${s}" ${s===state.activeStore?'selected':''}>${s}</option>`).join('');
-  const catSel = document.getElementById('groc-cat');
+  const catSel = document.getElementById('gCat');
   if (catSel) catSel.innerHTML = CATEGORIES.map(c=>`<option>${c}</option>`).join('');
 }
 
