@@ -771,7 +771,7 @@ function loadAll(){
     try{const old=localStorage.getItem('fhub_v2');if(old){const o=JSON.parse(old);['events','groceries','staples','recipes','meals','tasks','kids','pet','settings'].forEach(k=>{if(o[k])state[k]=o[k];});}}catch(e){}
   }
   if(!state.meds)state.meds={today:{AM:false,PM:false},lastReset:'',AM_time:'',PM_time:''};
-  if(!state.settings.ics1)state.settings.ics1='';
+  if(!state.settings.ics1)state.settings.ics1='https://calendar.google.com/calendar/ical/jbsilver27%40gmail.com/private-858861f0c0f108e5f96601e7de04dbfa/basic.ics';
   if(!state.settings.ics2)state.settings.ics2='';
   state._quickShop=false;state._storeFilter='All';state._taskBucket='today';state._weatherCache=null;state._weatherTs=0;
 }
@@ -915,6 +915,8 @@ function toggleMed(which){
 
 // ===== PET =====
 function renderPetToday(){
+  const pn=document.getElementById('petHeroName');if(pn)pn.textContent=state.pet.name;
+  const pb2=document.getElementById('petHeroBreed');if(pb2)pb2.textContent=state.pet.breed||'Good boy';
   const pt=state.pet.today;
   const map={fedAM:['ptAM','ptAMv'],fedAfternoon:['ptAfternoon','ptAfternoonv'],fedPM:['ptPM','ptPMv'],walked:['ptWk','ptWkv'],meds:['ptMed','ptMedv']};
   let done=0;
