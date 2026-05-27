@@ -851,7 +851,7 @@ function updateStats(){
 function getVisibleEvents(dateStr){
   const d=parseLocalDate(dateStr);
   const dow=d.getDay();
-  return state.events.filter(ev=>{
+  return (state.events||[]).concat(window._gcalEvents||[]).filter(ev=>{
     if(!ev.recur||ev.recur==='none')return parseLocalDate(ev.date).toDateString()===d.toDateString();
     if(ev.recur==='daily')return true;
     if(ev.recur==='weekly'){const base=parseLocalDate(ev.date);return base.getDay()===dow;}
