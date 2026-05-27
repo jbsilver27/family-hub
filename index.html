@@ -1014,10 +1014,10 @@ function loadGCalEvents(manual){
   const urls=[ics1,ics2].filter(u=>u.trim());
   urls.forEach(url=>{
     // Use allorigins proxy to bypass CORS
-    const proxy='https://api.allorigins.win/get?url='+encodeURIComponent(url);
+    const proxy='https://corsproxy.io/?'+encodeURIComponent(url);
     promises.push(
-      fetch(proxy).then(r=>r.json()).then(data=>{
-        const events=parseICS(data.contents||'');
+      fetch(proxy).then(r=>r.text()).then(text=>{
+        const events=parseICS(text);
         _gcalEvents=_gcalEvents.concat(events);
       }).catch(()=>{})
     );
