@@ -1713,7 +1713,7 @@ function renderSchedule() {
         +(ev.who?'<div class="event-who"> '+escH(ev.who)+'</div>':'')
         +(ev.note?'<div class="event-note">'+escH(ev.note)+'</div>':'')
       +'</div>'
-      +'<button class="groc-del-btn" onclick="deleteEvent(''+ev.id+'')">✕</button>'
+      +'<button class="groc-del-btn" onclick="deleteEvent(this.dataset.id)" data-id="'+ev.id+'">✕</button>'
     +'</div>';
   }).join('');
 }
@@ -1820,7 +1820,7 @@ function renderPetRems() {
       +'<div class="act-dot"></div>'
       +'<div class="act-info"><div class="act-name">'+escH(r.title)+'</div>'
       +'<div class="act-meta">'+(d?' '+d:'')+(r.note?' • '+escH(r.note):'')+'</div></div>'
-      +'<button class="act-del" onclick="deletePetRem(''+r.id+'')">✕</button>'
+      +'<button class="act-del" onclick="deletePetRem(this.dataset.id)" data-id="'+r.id+'">✕</button>'
     +'</div>';
   }).join('');
 }
@@ -1895,7 +1895,7 @@ function renderStaplesSuggestions() {
   el.innerHTML = staples.map(s => {
     const inList = activeNames.has(s.name.toLowerCase());
     const storeClass = STORE_CLASS[s.store]||'';
-    return '<div class="staple-chip'+(inList?' added':'')+'" onclick="addStapleToList(''+s.id+'')" title="'+(s.store||'Any store')+'">'
+    return '<div class="staple-chip'+(inList?' added':'')+'" onclick="addStapleToList(this.dataset.id)" data-id="'+s.id+'" title="'+(s.store||'Any store')+'">'
       +(CAT_EMOJI[s.category]||'')+' '+escH(s.name)
       +(s.store?'<span class="chip-store">'+escH(s.store)+'</span>':'')
     +'</div>';
@@ -1910,7 +1910,7 @@ function renderStaplesSuggestions() {
       return '<div class="activity-item">'
         +'<div class="act-dot" style="background:var(--amber);"></div>'
         +'<div class="act-info"><div class="act-name">'+escH(s.name)+'</div><div class="act-meta">'+escH(d)+'</div></div>'
-        +'<button class="act-del" onclick="deleteStaple(''+s.id+'')">✕</button>'
+        +'<button class="act-del" onclick="deleteStaple(this.dataset.id)" data-id="'+s.id+'">✕</button>'
       +'</div>';
     }).join('');
   }
@@ -1950,7 +1950,7 @@ function grocItemHTML(g) {
   const qtyLabel = (g.qty && g.qty!=1) || (g.unit && g.unit!=='ea') ? (g.qty||1)+' '+(g.unit&&g.unit!=='ea'?g.unit:'') : '';
   const storeTag = g.store ? '<span class="store-tag '+storeClass+'">'+escH(g.store)+'</span>' : '';
   const noteTag = g.note ? '<span>'+escH(g.note)+'</span>' : '';
-  return '<div class="groc-item'+(g.checked?' checked':'')+'" onclick="toggleGrocery(''+g.id+'')">'
+  return '<div class="groc-item'+(g.checked?' checked':'')+'" onclick="toggleGrocery(this.dataset.id)" data-id="'+g.id+'">'
     +'<div class="groc-check"><span class="groc-check-icon">✓</span></div>'
     +'<div class="groc-meta">'
       +'<div class="groc-name">'+escH(g.name)+'</div>'
@@ -1959,7 +1959,7 @@ function grocItemHTML(g) {
         +storeTag+noteTag
       +'</div>'
     +'</div>'
-    +'<div class="groc-actions"><button class="groc-del-btn" onclick="event.stopPropagation();deleteGrocery(''+g.id+'')">✕</button></div>'
+    +'<div class="groc-actions"><button class="groc-del-btn" onclick="event.stopPropagation();deleteGrocery(this.dataset.id)" data-id="'+g.id+'">✕</button></div>'
   +'</div>';
 }
 
@@ -2130,7 +2130,7 @@ function renderRecipeGrid() {
   el.innerHTML = recipes.map((r,i) => {
     const emoji = catEmojis[i % catEmojis.length];
     const tags = (r.tags||[]).slice(0,2).map(t=>'<span class="recipe-tag">'+escH(t)+'</span>').join('');
-    return '<div class="recipe-card fade-in" onclick="viewRecipe(''+r.id+'')">'
+    return '<div class="recipe-card fade-in" onclick="viewRecipe(this.dataset.id)" data-id="'+r.id+'">'
       +'<div class="recipe-thumb">'+emoji+'</div>'
       +'<div class="recipe-info"><div class="recipe-name">'+escH(r.name)+'</div>'
       +(tags?'<div class="recipe-tags">'+tags+'</div>':'')
@@ -2259,7 +2259,7 @@ function renderKidActivities(kidIdx, elId) {
     return '<div class="activity-item fade-in">'
       +'<div class="act-dot"></div>'
       +'<div class="act-info"><div class="act-name">'+escH(a.name)+'</div><div class="act-meta">'+escH(meta)+'</div></div>'
-      +'<button class="act-del" onclick="deleteActivity('+kidIdx+',''+a.id+'')">✕</button>'
+      +'<button class="act-del" onclick="deleteActivity(this.dataset.kid,this.dataset.id)" data-kid="'+kidIdx+'" data-id="'+a.id+'">✕</button>'
     +'</div>';
   }).join('');
 }
@@ -2310,7 +2310,7 @@ function renderTasks() {
       dueStr = dueDate.toLocaleDateString('en-US',{month:'short',day:'numeric'});
     }
     return '<div class="task-item'+(t.done?' done':'')+' fade-in">'
-      +'<div class="task-check" onclick="toggleTask(''+t.id+'')">'+(t.done?'<span style="color:white;font-size:12px;">✓</span>':'')+'</div>'
+      +'<div class="task-check" onclick="toggleTask(this.dataset.id)" data-id="'+t.id+'">'+(t.done?'<span style="color:white;font-size:12px;">✓</span>':'')+'</div>'
       +'<div style="flex:1;min-width:0;">'
         +'<div class="task-name">'+escH(t.name)+'</div>'
         +'<div class="task-meta">'
@@ -2320,7 +2320,7 @@ function renderTasks() {
           +(t.note?'<span style="font-size:11px;color:var(--gray-400);">'+escH(t.note)+'</span>':'')
         +'</div>'
       +'</div>'
-      +'<button class="task-del" onclick="deleteTask(''+t.id+'')">✕</button>'
+      +'<button class="task-del" onclick="deleteTask(this.dataset.id)" data-id="'+t.id+'">✕</button>'
     +'</div>';
   };
   el.innerHTML = open.map(renderItem).join('') + (done.length?'<div style="font-size:11px;font-weight:800;color:var(--gray-300);text-transform:uppercase;letter-spacing:.6px;padding:12px 16px 4px;">Completed</div>'+done.map(renderItem).join(''):'');
