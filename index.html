@@ -1299,27 +1299,28 @@ function updateStats() {
   if (el4) el4.textContent = mealCount + '/7';
 }
 
+function parseLocalDate(s){if(!s)return new Date();const p=s.split("-");return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));}
 function getVisibleEvents(dateStr) {
-  const d = new Date(dateStr);
+  const d = parseLocalDate(dateStr);
   const dow = d.getDay();
   const dowName = FULL_DAYS[dow];
   return state.events.filter(ev => {
     if (!ev.recur || ev.recur === 'none') {
-      return new Date(ev.date).toDateString() === dateStr;
+      return parseLocalDate(ev.date).toDateString() === dateStr;
     }
     if (ev.recur === 'daily') return true;
     if (ev.recur === 'weekly') {
-      const base = new Date(ev.date); return base.getDay() === dow;
+      const base = parseLocalDate(ev.date); return base.getDay() === dow;
     }
     if (ev.recur === 'weekdays') return dow >= 1 && dow <= 5;
     if (ev.recur === 'biweekly') {
-      const base = new Date(ev.date);
+      const base = parseLocalDate(ev.date);
       if (base.getDay() !== dow) return false;
       const diff = Math.round((d - base)/(7*24*3600*1000));
       return diff >= 0 && diff % 2 === 0;
     }
     if (ev.recur === 'monthly') {
-      const base = new Date(ev.date); return base.getDate() === d.getDate();
+      const base = parseLocalDate(ev.date); return base.getDate() === d.getDate();
     }
     return false;
   });
