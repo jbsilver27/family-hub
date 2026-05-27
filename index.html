@@ -1390,6 +1390,7 @@ function togglePetToday(key) {
   state.petTasks[key] = !state.petTasks[key];
   saveAllData();
   renderPetToday();
+  renderPet();
 }
 
 function togglePetTask(key) {
