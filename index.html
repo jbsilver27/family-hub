@@ -216,6 +216,25 @@ body{font-family:'Nunito',sans-serif;background:var(--cream);color:var(--text);m
 .calbico{font-size:1.7rem;flex-shrink:0}.calbtxt h3{font-size:.88rem;font-weight:800;color:var(--text);margin-bottom:2px}.calbtxt p{font-size:.74rem;color:var(--text-light);line-height:1.5}
 .calbtxt .btn{margin-top:7px}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--blush);border-radius:2px}::-webkit-scrollbar-track{background:transparent}
+
+/* Pet Today Improvements */
+.petcard { background: linear-gradient(135deg, var(--cream) 0%, #f5ede8 100%); }
+.pet-prog { font-size: .72rem; font-weight: 700; color: var(--green-dark); background: var(--sage); padding: 3px 10px; border-radius: 20px; }
+.ptrow { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 8px; }
+.pti { flex: 1; min-width: 70px; max-width: 110px; background: #fff; border-radius: 12px; padding: 10px 6px; text-align: center; cursor: pointer; transition: all .2s; border: 2px solid #f0e8e4; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+.pti:hover { border-color: var(--green); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+.pti.done { background: var(--sage); border-color: var(--green); }
+.ptie { font-size: 1.3rem; margin-bottom: 2px; }
+.ptil { font-size: .58rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 2px; }
+.ptiv { font-size: .7rem; font-weight: 600; color: var(--text-muted); }
+.pti.done .ptiv { color: var(--green-dark); }
+/* Quick Add Category */
+.qcat-sel { font-size: .74rem; padding: 5px 6px; border: 1.5px solid #e8ddd8 !important; border-radius: 8px !important; background: #fff; color: var(--text); cursor: pointer; max-width: 88px; flex-shrink: 0; }
+/* General Polish */
+.card { border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+.prt { border-radius: 14px; transition: all .2s; border: 1.5px solid transparent; }
+.prt:hover { border-color: var(--rose); transform: translateY(-1px); }
+.prt.done-pet { background: var(--sage) !important; border-color: var(--green) !important; }
 </style>
 </head>
 <body>
@@ -275,12 +294,14 @@ body{font-family:'Nunito',sans-serif;background:var(--cream);color:var(--text);m
     <div class="ch"><div class="ctitle"><div class="cico ip">🎀</div>Kids Today</div></div>
     <div id="kidsTodayList"><div class="es"><div class="ese">🎀</div><div class="est">No activities today</div><div class="ess">Add in the Kids tab</div></div></div>
   </div>
-  <div class="card">
-    <div class="ch"><div class="ctitle"><div class="cico im">🐾</div><span id="petTodayLbl">Pup's Day</span></div></div>
+  <div class="card petcard">
+    <div class="ch"><div class="ctitle"><div class="cico im">🐾</div><span id="petTodayLbl">Biscuit's Day</span></div><span class="pet-prog" id="petProg">0 / 5</span></div>
     <div class="ptrow">
-      <div class="pti" id="ptAM" onclick="togglePetToday('fedAM')"><div class="ptie">🍖</div><div class="ptil">AM Feed</div><div class="ptiv" id="ptAMv">Not yet</div></div>
-      <div class="pti" id="ptPM" onclick="togglePetToday('fedPM')"><div class="ptie">🥣</div><div class="ptil">PM Feed</div><div class="ptiv" id="ptPMv">Not yet</div></div>
-      <div class="pti" id="ptWk" onclick="togglePetToday('walked')"><div class="ptie">🚶</div><div class="ptil">Walked</div><div class="ptiv" id="ptWkv">Not yet</div></div>
+      <div class="pti" id="ptAM" onclick="togglePetToday('fedAM')"><div class="ptie">🍖</div><div class="ptil">Morning</div><div class="ptiv" id="ptAMv">Not yet</div></div>
+      <div class="pti" id="ptAfternoon" onclick="togglePetToday('fedAfternoon')"><div class="ptie">🌾</div><div class="ptil">Afternoon</div><div class="ptiv" id="ptAfternoonv">Not yet</div></div>
+      <div class="pti" id="ptPM" onclick="togglePetToday('fedPM')"><div class="ptie">🌙</div><div class="ptil">Evening</div><div class="ptiv" id="ptPMv">Not yet</div></div>
+      <div class="pti" id="ptWk" onclick="togglePetToday('walked')"><div class="ptie">🐕</div><div class="ptil">Walk</div><div class="ptiv" id="ptWkv">Not yet</div></div>
+      <div class="pti" id="ptMed" onclick="togglePetToday('meds')"><div class="ptie">💊</div><div class="ptil">Meds</div><div class="ptiv" id="ptMedv">Not yet</div></div>
     </div>
   </div>
 </div>
@@ -313,7 +334,7 @@ body{font-family:'Nunito',sans-serif;background:var(--cream);color:var(--text);m
     </div>
     <div class="stabs" id="sTabs"></div>
     <div id="grocItems"></div>
-    <div class="qadd"><span>➕</span><input type="text" id="qAddIn" placeholder="Quick add item... (Enter)" onkeydown="quickAdd(event)"/><button class="btn bp bsm" onclick="quickAddBtn()">Add</button></div>
+    <div class="qadd"><span>✚</span><input type="text" id="qAddIn" placeholder="Quick add item... (Enter)" onkeydown="quickAdd(event)"/><select id="qCat" class="qcat-sel"><option value="">Cat...</option><option value="Produce">🥦 Produce</option><option value="Dairy">🥛 Dairy</option><option value="Meat &amp; Seafood">🥩 Meat</option><option value="Bakery">🍞 Bakery</option><option value="Pantry">🥫 Pantry</option><option value="Frozen">🥶 Frozen</option><option value="Snacks">🍿 Snacks</option><option value="Beverages">🧃 Drinks</option><option value="Household">🧴 Home</option><option value="Personal Care">🧼 Care</option><option value="Other">Other</option></select><button class="btn bp bsm" onclick="quickAddBtn()">Add</button></div>
   </div>
 </div>
 
@@ -392,10 +413,21 @@ body{font-family:'Nunito',sans-serif;background:var(--cream);color:var(--text);m
     <div class="fg"><label class="fl">Quantity</label><input type="text" class="fi" id="gQty" placeholder="e.g. 1 gallon"/></div>
     <div class="fg"><label class="fl">Category</label>
       <select class="fs" id="gCat">
-        <option>🥛 Dairy</option><option>🥩 Meat & Seafood</option><option>🥦 Produce</option>
-        <option>🍞 Bakery & Bread</option><option>🥫 Pantry</option><option>🥶 Frozen</option>
-        <option>🧃 Beverages</option><option>🧴 Household</option><option>🧼 Personal Care</option>
-        <option>🍿 Snacks</option><option>Other</option>
+        <option value="Produce">🥦 Produce</option>
+        <option value="Dairy">🥛 Dairy</option>
+        <option value="Meat &amp; Seafood">🥩 Meat &amp; Seafood</option>
+        <option value="Bakery">🍞 Bakery</option>
+        <option value="Pantry">🥫 Pantry</option>
+        <option value="Frozen">🥶 Frozen</option>
+        <option value="Snacks">🍿 Snacks</option>
+        <option value="Beverages">🧃 Beverages</option>
+        <option value="Household">🧴 Household</option>
+        <option value="Personal Care">🧼 Personal Care</option>
+        <option value="Baby &amp; Kids">👶 Baby &amp; Kids</option>
+        <option value="Pet">🐾 Pet</option>
+        <option value="Deli">🧀 Deli</option>
+        <option value="Pharmacy">💊 Pharmacy</option>
+        <option value="Other">Other</option>
       </select>
     </div>
   </div>
@@ -805,21 +837,34 @@ function renderKidsToday() {
 
 function renderPetToday() {
   const tasks = state.petTasks;
-  const setPetUI = (key, done) => {
-    const el = document.getElementById('prt-' + key);
-    const vEl = document.getElementById('prv-' + key);
+  const petName = state.settings.petName || 'Biscuit';
+  const lbl = document.getElementById('petTodayLbl');
+  if(lbl) lbl.textContent = petName + "’s Day";
+  
+  const taskMap = [
+    {key:'fedAM', elId:'ptAM', valId:'ptAMv', doneText:'Fed!'},
+    {key:'fedAfternoon', elId:'ptAfternoon', valId:'ptAfternoonv', doneText:'Fed!'},
+    {key:'fedPM', elId:'ptPM', valId:'ptPMv', doneText:'Fed!'},
+    {key:'walked', elId:'ptWk', valId:'ptWkv', doneText:'Done!'},
+    {key:'meds', elId:'ptMed', valId:'ptMedv', doneText:'Given!'}
+  ];
+  
+  let doneCount = 0;
+  taskMap.forEach(function(t) {
+    const done = !!tasks[t.key];
+    if(done) doneCount++;
+    const el = document.getElementById(t.elId);
+    const vEl = document.getElementById(t.valId);
     if(el) el.classList.toggle('done', done);
-    if(vEl) vEl.textContent = done ? '✅ Done' : 'Not done';
-  };
-  Object.entries(tasks).forEach(([k,v]) => setPetUI(k,v));
-  const ptAM = document.getElementById('ptAM'); if(ptAM) ptAM.textContent = tasks.fedAM ? '✅' : '🍞';
-  const ptAMv = document.getElementById('ptAMv'); if(ptAMv) ptAMv.textContent = tasks.fedAM ? 'Fed' : 'Not fed';
-  const ptPM = document.getElementById('ptPM'); if(ptPM) ptPM.textContent = tasks.fedPM ? '✅' : '🍞';
-  const ptPMv = document.getElementById('ptPMv'); if(ptPMv) ptPMv.textContent = tasks.fedPM ? 'Fed' : 'Not fed';
-  const ptWk = document.getElementById('ptWk'); if(ptWk) ptWk.textContent = tasks.walked ? '✅' : '🦶';
-  const ptWkv = document.getElementById('ptWkv'); if(ptWkv) ptWkv.textContent = tasks.walked ? 'Walked' : 'Not walked';
-  const petTL = document.getElementById('petTodayLbl');
-  if(petTL) petTL.textContent = Object.values(tasks).filter(Boolean).length + ' / ' + Object.keys(tasks).length + ' tasks done today';
+    if(vEl) vEl.textContent = done ? t.doneText : 'Not yet';
+  });
+  
+  const prog = document.getElementById('petProg');
+  if(prog) {
+    prog.textContent = doneCount + ' / ' + taskMap.length;
+    prog.style.background = doneCount === taskMap.length ? 'var(--green)' : 'var(--sage)';
+    prog.style.color = doneCount === taskMap.length ? '#fff' : 'var(--green-dark)';
+  }
 }
 
 // ---- MEALS TAB ----
@@ -1166,18 +1211,17 @@ function quickAddBtn() {
   const input = document.getElementById('qAddIn');
   if(!input || !input.value.trim()) return;
   const name = input.value.trim();
+  const catEl = document.getElementById('qCat');
+  const cat = catEl && catEl.value ? catEl.value : 'Other';
   if(!state.groceries[state.activeStore]) state.groceries[state.activeStore] = [];
-  state.groceries[state.activeStore].push({name, category:'Other', checked:false, id:Date.now()});
-  // Save to staples
-  if(!state.staples.find(s=>s.name.toLowerCase()===name.toLowerCase())) {
-    state.staples.push({name, category:'Other', store:state.activeStore});
+  state.groceries[state.activeStore].push({name, category: cat, checked: false, id: Date.now()});
+  if(!state.staples.find(s => s.name.toLowerCase() === name.toLowerCase())) {
+    state.staples.push({name, category: cat, store: state.activeStore});
     saveMiscData();
   }
   input.value = '';
   saveAllData();
-  renderGroceryList();
-  updateStats();
-  showToast(name + ' added!');
+  renderGrocery();
 }
 
 // Staples Repository
