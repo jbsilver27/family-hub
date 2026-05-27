@@ -864,7 +864,7 @@ function getVisibleEvents(dateStr){
 
 function renderSchedule(){
   const el=document.getElementById('evList');if(!el)return;
-  const today=new Date().toDateString();
+  const today=new Date().toISOString().split('T')[0];
   const evs=getVisibleEvents(today).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
   if(!evs.length){el.innerHTML='<div class="empty-state">No events today &mdash; enjoy the day!</div>';return;}
   const colors={Mom:'var(--pink)',Dad:'var(--blue)',Erick:'var(--blue)',Lily:'var(--purple)',Emma:'var(--teal)',Family:'var(--gold)',Biscuit:'var(--coral)'};
