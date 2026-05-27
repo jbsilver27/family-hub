@@ -1490,7 +1490,7 @@ const GROCERY_CATS = ['Produce','Dairy','Meat & Seafood','Bakery','Frozen','Pant
 const STORES = ['Costco','Target','Trader Joes','Whole Foods','Safeway','Albertsons','Amazon','Other'];
 const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const SHORT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-const CAT_EMOJI = {'Produce':'🥬','Dairy':'🥛','Meat & Seafood':'🥩','Bakery':'🍞','Frozen':'🧊','Pantry':'🥫','Snacks':'🍿','Beverages':'🥤','Household':'🧹','Personal Care':'🧴','Baby & Kids':'👶','Pet':'🐾','Deli':'🥪','Pharmacy':'💊','Other':'📦'};
+const CAT_EMOJI = {'Produce':'','Dairy':'','Meat & Seafood':'','Bakery':'','Frozen':'','Pantry':'','Snacks':'','Beverages':'','Household':'','Personal Care':'','Baby & Kids':'','Pet':'','Deli':'','Pharmacy':'','Other':''};
 const STORE_CLASS = {'Costco':'costco','Target':'target','Trader Joes':'trader','Whole Foods':'whole','Safeway':'safeway','Albertsons':'albertsons'};
 
 // ===== STATE =====
@@ -1543,7 +1543,7 @@ function applyNames() {
   const pn = document.getElementById('petPageName'); if(pn) pn.textContent = state.pet.name;
   const pb = document.getElementById('petPageBreed'); if(pb) pb.textContent = state.pet.breed;
   const ph = document.getElementById('petHeroName'); if(ph) ph.textContent = state.pet.name;
-  const phb = document.getElementById('petHeroBreed'); if(phb) phb.textContent = state.pet.breed + ' 🐾';
+  const phb = document.getElementById('petHeroBreed'); if(phb) phb.textContent = state.pet.breed + ' ';
   const ptl = document.getElementById('petTodayLbl'); if(ptl) ptl.textContent = state.pet.name + "'s Day";
 }
 
@@ -1551,7 +1551,7 @@ function applyNames() {
 function updateDateTime() {
   const now = new Date();
   const h = now.getHours();
-  let greeting = h < 12 ? 'Good Morning! ☀️' : h < 17 ? 'Good Afternoon! 🌤️' : h < 21 ? 'Good Evening! 🌆' : 'Good Night! 🌙';
+  let greeting = h < 12 ? 'Good Morning! ☀️' : h < 17 ? 'Good Afternoon! ️' : h < 21 ? 'Good Evening! ' : 'Good Night! ';
   const el = document.getElementById('todayGreeting'); if(el) el.textContent = greeting;
   const dateStr = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   const hDate = document.getElementById('hDate'); if(hDate) hDate.textContent = dateStr;
@@ -1694,7 +1694,7 @@ function renderSchedule() {
     .filter(e => new Date(e.date).toDateString()===today)
     .sort((a,b) => (a.time||'99:99').localeCompare(b.time||'99:99'));
   if(!todayEvs.length) {
-    el.innerHTML = '<div class="schedule-empty">No events today — enjoy the day! 🌟</div>';
+    el.innerHTML = '<div class="schedule-empty">No events today — enjoy the day! </div>';
     return;
   }
   el.innerHTML = todayEvs.map(ev => {
@@ -1710,7 +1710,7 @@ function renderSchedule() {
       +'<div class="event-dot" style="background:'+color+';box-shadow:0 0 0 3px '+color+'33;"></div>'
       +'<div class="event-info">'
         +'<div class="event-title">'+escH(ev.title)+'</div>'
-        +(ev.who?'<div class="event-who">👤 '+escH(ev.who)+'</div>':'')
+        +(ev.who?'<div class="event-who"> '+escH(ev.who)+'</div>':'')
         +(ev.note?'<div class="event-note">'+escH(ev.note)+'</div>':'')
       +'</div>'
       +'<button class="groc-del-btn" onclick="deleteEvent(''+ev.id+'')">✕</button>'
@@ -1739,7 +1739,7 @@ function renderKidsToday() {
       if(a.day===today) items.push({...a, kidName:kid.name});
     });
   });
-  if(!items.length) { el.innerHTML = '<div class="schedule-empty">No activities today 🎉</div>'; return; }
+  if(!items.length) { el.innerHTML = '<div class="schedule-empty">No activities today </div>'; return; }
   items.sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
   el.innerHTML = items.map(a => {
     let timeStr = '';
@@ -1819,7 +1819,7 @@ function renderPetRems() {
     return '<div class="activity-item fade-in">'
       +'<div class="act-dot"></div>'
       +'<div class="act-info"><div class="act-name">'+escH(r.title)+'</div>'
-      +'<div class="act-meta">'+(d?'📅 '+d:'')+(r.note?' • '+escH(r.note):'')+'</div></div>'
+      +'<div class="act-meta">'+(d?' '+d:'')+(r.note?' • '+escH(r.note):'')+'</div></div>'
       +'<button class="act-del" onclick="deletePetRem(''+r.id+'')">✕</button>'
     +'</div>';
   }).join('');
@@ -1840,7 +1840,7 @@ function savePetRem() {
   document.getElementById('remTitle').value='';
   document.getElementById('remDate').value='';
   document.getElementById('remNote').value='';
-  showToast('Reminder added! 🐾', 'success');
+  showToast('Reminder added! ', 'success');
 }
 function deletePetRem(id) {
   state.pet.reminders = (state.pet.reminders||[]).filter(r=>r.id!==id);
@@ -1868,7 +1868,7 @@ function saveEvent() {
   const evDate = document.getElementById('evDate'); if(evDate) evDate.value = new Date().toISOString().slice(0,10);
   closeModal('evModal');
   renderToday();
-  showToast('Event added! 📅', 'success');
+  showToast('Event added! ', 'success');
 }
 function deleteEvent(id) {
   state.events = state.events.filter(e=>e.id!==id);
@@ -1896,7 +1896,7 @@ function renderStaplesSuggestions() {
     const inList = activeNames.has(s.name.toLowerCase());
     const storeClass = STORE_CLASS[s.store]||'';
     return '<div class="staple-chip'+(inList?' added':'')+'" onclick="addStapleToList(''+s.id+'')" title="'+(s.store||'Any store')+'">'
-      +(CAT_EMOJI[s.category]||'📦')+' '+escH(s.name)
+      +(CAT_EMOJI[s.category]||'')+' '+escH(s.name)
       +(s.store?'<span class="chip-store">'+escH(s.store)+'</span>':'')
     +'</div>';
   }).join('');
@@ -1924,8 +1924,8 @@ function renderGroceryList() {
   }
   if(!items.length) {
     const emptyMsg = _storeFilter==='all'
-      ? '<div class="empty-state"><div class="empty-icon">🛒</div><div class="empty-title">Your list is empty</div><div class="empty-sub">Tap + to add items or choose from your staples</div></div>'
-      : '<div class="empty-state"><div class="empty-icon">🏪</div><div class="empty-title">No items for '+escH(_storeFilter)+'</div><div class="empty-sub">Add items and set their preferred store</div></div>';
+      ? '<div class="empty-state"><div class="empty-icon"></div><div class="empty-title">Your list is empty</div><div class="empty-sub">Tap + to add items or choose from your staples</div></div>'
+      : '<div class="empty-state"><div class="empty-icon"></div><div class="empty-title">No items for '+escH(_storeFilter)+'</div><div class="empty-sub">Add items and set their preferred store</div></div>';
     el.innerHTML = emptyMsg; return;
   }
   // Group by category, checked at bottom
@@ -1935,7 +1935,7 @@ function renderGroceryList() {
   unchecked.forEach(g => { const c = g.category||'Other'; if(!byCategory[c]) byCategory[c]=[]; byCategory[c].push(g); });
   let html = '';
   Object.keys(byCategory).sort().forEach(cat => {
-    html += '<div class="groc-section-label">'+(CAT_EMOJI[cat]||'📦')+' '+escH(cat)+'</div>';
+    html += '<div class="groc-section-label">'+(CAT_EMOJI[cat]||'')+' '+escH(cat)+'</div>';
     html += byCategory[cat].map(g => grocItemHTML(g)).join('');
   });
   if(checked.length) {
@@ -2021,7 +2021,7 @@ function addStapleToList(id) {
   const item = { id:Date.now().toString(), name:staple.name, qty:staple.qty||1, unit:staple.unit||'ea', category:staple.category||'Other', store:staple.store||'', note:staple.note||'', checked:false };
   state.groceries.push(item);
   saveAll(); renderGrocery();
-  showToast(staple.name+' added! 🛒', 'success');
+  showToast(staple.name+' added! ', 'success');
 }
 
 function toggleGrocery(id) {
@@ -2085,7 +2085,7 @@ function openAssignMeal(dayIdx) {
   const d = new Date(ws); d.setDate(ws.getDate()+dayIdx);
   const key = _mealWeekStart+'_'+dayIdx;
   const existing = (state.meals||{})[key];
-  document.getElementById('mealModalTitle').textContent = 'Plan '+DAYS[d.getDay()]+' 🍽️';
+  document.getElementById('mealModalTitle').textContent = 'Plan '+DAYS[d.getDay()]+' ️';
   document.getElementById('mealName').value = existing ? existing.name : '';
   document.getElementById('mealNote').value = existing ? (existing.note||'') : '';
   // Show recipe picks
@@ -2109,7 +2109,7 @@ function saveMeal() {
   if(name) state.meals[key] = {name, note};
   else delete state.meals[key];
   saveAll(); closeModal('mealModal'); renderWeekGrid(); renderDinnerBanner(); updateStats();
-  showToast(name ? name+' planned! 🍽️' : 'Meal cleared', name?'success':'');
+  showToast(name ? name+' planned! ️' : 'Meal cleared', name?'success':'');
 }
 
 // ===== RECIPES =====
@@ -2117,10 +2117,10 @@ function renderRecipeGrid() {
   const el = document.getElementById('rGrid'); if(!el) return;
   const recipes = state.recipes||[];
   if(!recipes.length) {
-    el.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">👩‍🍳</div><div class="empty-title">No recipes yet</div><div class="empty-sub">Tap + to add your first recipe</div></div>';
+    el.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">‍</div><div class="empty-title">No recipes yet</div><div class="empty-sub">Tap + to add your first recipe</div></div>';
     return;
   }
-  const catEmojis = ['🍝','🥗','🍕','🍛','🥘','🍣','🍔','🌮','🥩','🍜','🥞','🍲'];
+  const catEmojis = ['','','','','','','','','','','',''];
   el.innerHTML = recipes.map((r,i) => {
     const emoji = catEmojis[i % catEmojis.length];
     const tags = (r.tags||[]).slice(0,2).map(t=>'<span class="recipe-tag">'+escH(t)+'</span>').join('');
@@ -2134,7 +2134,7 @@ function renderRecipeGrid() {
 }
 function openAddRecModal() {
   _editRecId = null;
-  document.getElementById('recModalTitle').textContent = 'New Recipe 👩‍🍳';
+  document.getElementById('recModalTitle').textContent = 'New Recipe ‍';
   ['recName','recTags','recInstructions'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const srv=document.getElementById('recServ'); if(srv) srv.value='';
   const tm=document.getElementById('recTime'); if(tm) tm.value='';
@@ -2172,13 +2172,13 @@ function saveRec() {
   if(_editRecId) { const idx=state.recipes.findIndex(r=>r.id===_editRecId); if(idx>=0) state.recipes[idx]=rec; }
   else { if(!state.recipes) state.recipes=[]; state.recipes.push(rec); }
   saveAll(); closeModal('recModal'); renderRecipeGrid();
-  showToast(name+' saved! 🍳', 'success');
+  showToast(name+' saved! ', 'success');
 }
 function viewRecipe(id) {
   const r = (state.recipes||[]).find(r=>r.id===id); if(!r) return;
   _viewRecId = id; _ingChecked = {};
   document.getElementById('rdTitle').textContent = r.name;
-  document.getElementById('rdServ').textContent = r.serv ? '👤 '+r.serv+' servings' : '';
+  document.getElementById('rdServ').textContent = r.serv ? ' '+r.serv+' servings' : '';
   document.getElementById('rdTime').textContent = r.time ? '⏱ '+r.time+' min' : '';
   const tagsEl = document.getElementById('rdTags');
   tagsEl.innerHTML = (r.tags||[]).map(t=>'<span class="recipe-tag">'+escH(t)+'</span>').join('');
@@ -2207,7 +2207,7 @@ function addSelIngredients() {
     }
   });
   saveAll();
-  showToast(added+' ingredient'+(added!==1?'s':'')+' added to list! 🛒', 'success');
+  showToast(added+' ingredient'+(added!==1?'s':'')+' added to list! ', 'success');
 }
 function planFromDetail() {
   const r = (state.recipes||[]).find(r=>r.id===_viewRecId); if(!r) return;
@@ -2273,7 +2273,7 @@ function saveAct() {
   saveAll();
   ['actName','actTime','actLoc','actNote'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   closeModal('actModal'); renderKids();
-  showToast(act.name+' added for '+state.kids[kidIdx].name+'! 🎀', 'success');
+  showToast(act.name+' added for '+state.kids[kidIdx].name+'! ', 'success');
 }
 function deleteActivity(kidIdx, id) {
   state.kids[kidIdx].activities = (state.kids[kidIdx].activities||[]).filter(a=>a.id!==id);
@@ -2297,7 +2297,7 @@ function renderTasks() {
   const done = tasks.filter(t=>t.done);
   const renderItem = t => {
     const pClass = t.priority==='high'?'high':t.priority==='low'?'low':'med';
-    const pLabel = t.priority==='high'?'🔴 High':t.priority==='low'?'🟢 Low':'🟡 Medium';
+    const pLabel = t.priority==='high'?' High':t.priority==='low'?' Low':' Medium';
     let dueStr='';
     if(t.due) {
       const dueDate = new Date(t.due+'T00:00:00');
@@ -2308,9 +2308,9 @@ function renderTasks() {
       +'<div style="flex:1;min-width:0;">'
         +'<div class="task-name">'+escH(t.name)+'</div>'
         +'<div class="task-meta">'
-          +(t.assignee?'<span class="task-pill assignee">👤 '+escH(t.assignee)+'</span>':'')
+          +(t.assignee?'<span class="task-pill assignee"> '+escH(t.assignee)+'</span>':'')
           +'<span class="task-pill '+pClass+'">'+pLabel+'</span>'
-          +(dueStr?'<span class="task-pill due">📅 '+escH(dueStr)+'</span>':'')
+          +(dueStr?'<span class="task-pill due"> '+escH(dueStr)+'</span>':'')
           +(t.note?'<span style="font-size:11px;color:var(--gray-400);">'+escH(t.note)+'</span>':'')
         +'</div>'
       +'</div>'
@@ -2348,7 +2348,7 @@ function toggleTask(id) {
   const t = (state.tasks||[]).find(t=>t.id===id); if(!t) return;
   t.done = !t.done;
   saveAll(); renderTasks(); updateStats();
-  showToast(t.done?'Task done! 🎉':'Marked as open', t.done?'success':'');
+  showToast(t.done?'Task done! ':'Marked as open', t.done?'success':'');
 }
 function deleteTask(id) {
   state.tasks = (state.tasks||[]).filter(t=>t.id!==id);
