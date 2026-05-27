@@ -1695,7 +1695,7 @@ function renderCalDayEvents(ds){
       const endStr=ev.endTime?'\u2013'+formatTime(ev.endTime):'';
       const srcBadge=ev.source?'<span class="ev-source-badge">Google</span>':'';
       html+='<div class="cal-ev-item" style="border-left-color:'+col+'">'
-        +'<div class="cal-ev-time" style="color:'+col+'">'+timeStr+(endStr?'<br><span style=\"color:var(--text-muted);font-size:.65rem\">'+endStr+'</span>':'')+'</div>'
+        +'<div class="cal-ev-time" style="color:'+col+'">'+timeStr+(endStr?'<br><small style="color:#888;font-size:.65rem">'+endStr+'</small>':'')+'</div>'
         +'<div class="cal-ev-body"><div class="cal-ev-title">'+esc(ev.title)+srcBadge+'</div>'
         +(ev.who||ev.note?'<div class="cal-ev-meta">'+(ev.who?esc(ev.who):'')+(ev.note?' \u2014 '+esc(ev.note):'')+'</div>':'')
         +'</div>'
@@ -1711,8 +1711,17 @@ function renderCalDayEvents(ds){
         +'</div></div>';
     });
   }
-  html+='<button class="cal-add-btn" onclick="closeModal('calendarModal');setTimeout(()=>{openAddEventModal();document.getElementById('evDate').value=''+ds+'';},100)">+ Add event on this day</button>';
+  html+='<button class="cal-add-btn" onclick="calAddEventOnDay(this.dataset.ds)" data-ds="'+ds+'">+ Add event on this day</button>';
   evEl.innerHTML=html;
+}
+
+function calAddEventOnDay(ds){
+  closeModal('calendarModal');
+  setTimeout(function(){
+    openAddEventModal();
+    var el=document.getElementById('evDate');
+    if(el)el.value=ds;
+  },100);
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
