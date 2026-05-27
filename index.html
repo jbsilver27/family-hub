@@ -1808,8 +1808,7 @@ function saveRec() {
     if (n) ings.push({name:n,qty:q,unit:u,checked:false});
   });
   const stepsRaw = document.getElementById('recSteps').value||'';
-  const steps = stepsRaw.split('
-').map(s=>s.replace(/^[d.]+s*/,'')).filter(s=>s.trim());
+  const steps = stepsRaw.split('\n').map(s=>s.replace(/^[d.]+s*/,'')).filter(s=>s.trim());
   const rec = {
     id: Date.now(), name,
     prep: document.getElementById('recPrep').value,
