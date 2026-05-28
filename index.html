@@ -1212,7 +1212,7 @@ function loadGCalEvents(manual){
       if(window._gcalEvents.length>0){statusEl.textContent='Google Calendar: '+window._gcalEvents.length+' events loaded';}
       else{statusEl.textContent='Google Calendar: connected (no upcoming events found)';}
     }
-    renderSchedule();
+    renderSchedule();updateStats();
     if(manual)showToast('Calendar synced! '+window._gcalEvents.length+' events loaded.');
   });
 }
