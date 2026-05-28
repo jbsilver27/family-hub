@@ -938,8 +938,7 @@ function pullFromCloud(){
   }).then(data=>{
     if(!data)return;
     _syncFileSha=data.sha||'';
-    const raw=decodeURIComponent(escape(atob(data.content.replace(/
-/g,''))));
+    const raw=decodeURIComponent(escape(atob(data.content.split('\n').join('')))));
     const remote=JSON.parse(raw);
     const remoteHash=strHash(raw);
     if(remoteHash===_lastCloudHash)return;
