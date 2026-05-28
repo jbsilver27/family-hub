@@ -319,6 +319,58 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
 .store-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(0,0,0,0.04);border-radius:8px;font-size:14px;}
 .store-remove-btn{background:none;border:none;color:#ff7675;font-size:18px;cursor:pointer;padding:0 4px;line-height:1;}
 </style>
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getDatabase, ref, set, onValue, off } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+  window._fbApp = null;
+  window._fbDb = null;
+  window._fbRef = null;
+  window._fbInitialized = false;
+  window._fbSuppressNext = false;
+
+  window.initFirebase = function(config) {
+    try {
+      if (window._fbApp) {
+        try { window._fbApp.delete(); } catch(e) {}
+      }
+      window._fbApp = initializeApp(config, 'family-hub-' + Date.now());
+      window._fbDb = getDatabase(window._fbApp);
+      window._fbRef = ref(window._fbDb, 'familyHub/state');
+      window._fbInitialized = true;
+
+      // Real-time listener - when data changes on another device, update UI
+      onValue(window._fbRef, (snapshot) => {
+        if (window._fbSuppressNext) { window._fbSuppressNext = false; return; }
+        const data = snapshot.val();
+        if (!data) return;
+        // Merge Firebase data into state (preserve UI-only keys)
+        const uiKeys = ['_quickShop','_storeFilter','_taskBucket','_weatherCache','_weatherTs'];
+        const merged = Object.assign({}, data);
+        uiKeys.forEach(k => { if (window.state && window.state[k] !== undefined) merged[k] = window.state[k]; });
+        window.state = merged;
+        if (window.renderAll) window.renderAll();
+      });
+
+      console.log('Firebase initialized successfully');
+      return true;
+    } catch(e) {
+      console.warn('Firebase init error:', e.message);
+      window._fbInitialized = false;
+      return false;
+    }
+  };
+
+  window.fbSave = function(stateObj) {
+    if (!window._fbInitialized || !window._fbRef) return;
+    try {
+      window._fbSuppressNext = true;
+      set(window._fbRef, stateObj);
+    } catch(e) {
+      console.warn('Firebase save error:', e.message);
+    }
+  };
+</script>
 </head>
 <body>
 
@@ -709,6 +761,17 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
     <div class="settings-row"><span class="settings-row-label">Test connection</span><button class="settings-btn primary" onclick="loadGCalEvents(true)">Sync Now</button></div>
   </div>
   <div class="settings-section">
+    <div class="settings-section-title">Cloud Sync (Real-Time, All Devices)</div>
+    <div class="settings-tip" style="background:#e8f5e9;border-color:#4caf50;">
+      <b>How to connect:</b> Create a <em>free</em> Firebase project at <a href="https://console.firebase.google.com" target="_blank" style="color:#4caf50;">console.firebase.google.com</a> (takes 2 min, no credit card). Then: Add project &rarr; name it "family-hub" &rarr; Create Realtime Database (test mode) &rarr; Project Settings &rarr; Add App (web) &rarr; copy the <em>firebaseConfig</em> values below. Once connected, all devices sync instantly!
+    </div>
+    <div class="settings-row"><span class="settings-row-label">API Key</span><input type="text" id="sfbApiKey" placeholder="AIzaSy..." style="flex:1;padding:8px;border:1px solid #e0d6f0;border-radius:8px;font-size:13px;"></div>
+    <div class="settings-row"><span class="settings-row-label">Database URL</span><input type="text" id="sfbDbUrl" placeholder="https://your-app-default-rtdb.firebaseio.com" style="flex:1;padding:8px;border:1px solid #e0d6f0;border-radius:8px;font-size:13px;"></div>
+    <div class="settings-row"><span class="settings-row-label">Project ID</span><input type="text" id="sfbProjectId" placeholder="your-app-12345" style="flex:1;padding:8px;border:1px solid #e0d6f0;border-radius:8px;font-size:13px;"></div>
+    <div class="settings-row"><span class="settings-row-label">App ID</span><input type="text" id="sfbAppId" placeholder="1:123456:web:abc..." style="flex:1;padding:8px;border:1px solid #e0d6f0;border-radius:8px;font-size:13px;"></div>
+    <div class="settings-row"><span class="settings-row-label">Status</span><span id="sfbStatus" style="font-size:13px;color:#888;">Not connected</span></div>
+  </div>
+  <div class="settings-section">
     <div class="settings-section-title">Data</div>
     <div class="settings-row"><span class="settings-row-label">Export all data</span><button class="settings-btn safe" onclick="exportData()">Export JSON</button></div>
     <div class="settings-row"><span class="settings-row-label">Reset all data</span><button class="settings-btn danger" onclick="resetData()">Reset</button></div>
@@ -837,21 +900,34 @@ let state={
   _quickShop:false,_storeFilter:'All',_taskBucket:'today',_weatherCache:null,_weatherTs:0
 };
 
+window.state=state;
+
 function saveAll(){
   const s=JSON.parse(JSON.stringify(state));
   delete s._quickShop;delete s._storeFilter;delete s._taskBucket;delete s._weatherCache;delete s._weatherTs;
-  localStorage.setItem(SK,JSON.stringify(s));
+  const SK2='fhub_v3';
+  try{localStorage.setItem(SK2,JSON.stringify(s));}catch(e){}
+  // Firebase sync
+  if(window._fbInitialized){window.fbSave(s);}
 }
+
 function loadAll(){
-  try{const raw=localStorage.getItem(SK);if(raw){const saved=JSON.parse(raw);Object.assign(state,saved);}}catch(e){}
-  // migrate old key
-  if(!localStorage.getItem(SK)){
-    try{const old=localStorage.getItem('fhub_v2');if(old){const o=JSON.parse(old);['events','groceries','staples','recipes','meals','tasks','kids','pet','settings'].forEach(k=>{if(o[k])state[k]=o[k];});}}catch(e){}
-  }
+  try{
+    const SK2='fhub_v3';
+    const raw=localStorage.getItem(SK2);
+    if(raw){const parsed=JSON.parse(raw);['events','groceries','staples','recipes','meals','tasks','kids','pet','settings'].forEach(k=>{if(parsed[k]!==undefined)state[k]=parsed[k];});if(parsed.meds)state.meds=parsed.meds;}
+  }catch(e){}
   if(!state.meds)state.meds={today:{AM:false,PM:false},lastReset:'',AM_time:'',PM_time:''};
   if(!state.settings.ics1)state.settings.ics1='https://calendar.google.com/calendar/ical/jbsilver27%40gmail.com/private-858861f0c0f108e5f96601e7de04dbfa/basic.ics';
-  if(!state.settings.ics2)state.settings.ics2='';
-  state._quickShop=false;state._storeFilter='All';state._taskBucket='today';state._weatherCache=null;state._weatherTs=0;
+  if(!state.settings.ics2)state.settings.ics2='https://calendar.google.com/calendar/ical/family02850838845370772264%40group.calendar.google.com/private-6d4bde34476edf17beb9689c09b0481f/basic.ics';
+  if(!state.settings.ics3)state.settings.ics3='';
+  if(!state.settings.ics4)state.settings.ics4='';
+  if(!state.settings.ics5)state.settings.ics5='';
+  // Init Firebase if credentials saved
+  if(state.settings.fbApiKey&&state.settings.fbDbUrl){
+    const cfg={apiKey:state.settings.fbApiKey,databaseURL:state.settings.fbDbUrl,projectId:state.settings.fbProjectId||'',appId:state.settings.fbAppId||''};
+    if(window.initFirebase)window.initFirebase(cfg);
+  }
 }
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -912,7 +988,10 @@ function checkDailyReset(){
 
 
 // ===== TODAY =====
-function renderToday(){updateStats();renderDinnerBanner();renderSchedule();renderMeds();renderKidsToday();renderPetToday();}
+function renderToday(){updateStats();renderDinnerBanner();renderSchedule();renderMeds();renderKidsToday();renderPetToday();
+window.renderAll=renderToday;
+window.saveAll=saveAll;
+}
 
 function updateStats(){
   const today=todayStr();
@@ -1616,6 +1695,19 @@ function openSettings(){
   document.getElementById('sWeatherLoc').value=s.weatherLoc||'San Francisco, CA';
   document.getElementById('sIcs1').value=s.ics1||'';document.getElementById('sIcs2').value=s.ics2||'';const _si3=document.getElementById('sIcs3');if(_si3)_si3.value=s.ics3||'';const _si4=document.getElementById('sIcs4');if(_si4)_si4.value=s.ics4||'';const _si5=document.getElementById('sIcs5');if(_si5)_si5.value=s.ics5||'';
   const slEl=document.getElementById('storeList');if(slEl){slEl.innerHTML=(s.stores||[]).map((st,i)=>'<div class="store-item"><span>'+st+'</span><button class="store-remove-btn" onclick="removeStore('+i+')">\u00D7</button></div>').join('');}
+  // Populate Firebase config fields
+  const _si_fbApiKey=document.getElementById('sfbApiKey');
+  if(_si_fbApiKey)_si_fbApiKey.value=s.fbApiKey||'';
+  const _si_fbDbUrl=document.getElementById('sfbDbUrl');
+  if(_si_fbDbUrl)_si_fbDbUrl.value=s.fbDbUrl||'';
+  const _si_fbProjectId=document.getElementById('sfbProjectId');
+  if(_si_fbProjectId)_si_fbProjectId.value=s.fbProjectId||'';
+  const _si_fbAppId=document.getElementById('sfbAppId');
+  if(_si_fbAppId)_si_fbAppId.value=s.fbAppId||'';
+  // Update connection status
+  const _si_fbStatus=document.getElementById('sfbStatus');
+  if(_si_fbStatus)_si_fbStatus.textContent=window._fbInitialized?'Connected!':'Not connected';
+  if(_si_fbStatus)_si_fbStatus.style.color=window._fbInitialized?'#4caf50':'#888';
   openModal('settingsModal');
 }
 function saveSettings(){
@@ -1635,6 +1727,23 @@ function saveSettings(){
   state.pet.name=state.settings.petName;state.pet.breed=state.settings.petBreed;
   state.kids[0].name=state.settings.k1;state.kids[1].name=state.settings.k2;
   state._weatherCache=null;state._weatherTs=0;
+  // Save Firebase config
+  const _fbApiKey=document.getElementById('sfbApiKey');
+  const _fbDbUrl=document.getElementById('sfbDbUrl');
+  const _fbProjectId=document.getElementById('sfbProjectId');
+  const _fbAppId=document.getElementById('sfbAppId');
+  if(_fbApiKey)state.settings.fbApiKey=(_fbApiKey.value||'').trim();
+  if(_fbDbUrl)state.settings.fbDbUrl=(_fbDbUrl.value||'').trim();
+  if(_fbProjectId)state.settings.fbProjectId=(_fbProjectId.value||'').trim();
+  if(_fbAppId)state.settings.fbAppId=(_fbAppId.value||'').trim();
+  // Init or re-init Firebase if credentials provided
+  if(state.settings.fbApiKey&&state.settings.fbDbUrl&&window.initFirebase){
+    const _cfg={apiKey:state.settings.fbApiKey,databaseURL:state.settings.fbDbUrl,projectId:state.settings.fbProjectId||'',appId:state.settings.fbAppId||''};
+    const _ok=window.initFirebase(_cfg);
+    const _statusEl=document.getElementById('sfbStatus');
+    if(_statusEl)_statusEl.textContent=_ok?'Connected!':'Error - check credentials';
+    if(_statusEl)_statusEl.style.color=_ok?'#4caf50':'#e57373';
+  }
   saveAll();closeModal('settingsModal');applyNames();renderToday();
   showToast('Settings saved!');
   if(state.settings.ics1||state.settings.ics2||state.settings.ics3||state.settings.ics4||state.settings.ics5)setTimeout(()=>loadGCalEvents(false),500);
@@ -1876,7 +1985,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   setTimeout(()=>{
     const loc=(state.settings&&state.settings.weatherLoc)?state.settings.weatherLoc:'San Francisco, CA';
     fetch('https://wttr.in/'+encodeURIComponent(loc)+'?format=j1').then(r=>r.json()).then(data=>{state._weatherCache=data;state._weatherTs=Date.now();updateWeatherChip(data);}).catch(()=>{});
-    if((state.settings&&state.settings.ics1)||(state.settings&&state.settings.ics2))loadGCalEvents(false);
+    if(state.settings&&(state.settings.ics1||state.settings.ics2||state.settings.ics3||state.settings.ics4||state.settings.ics5))loadGCalEvents(false);
   },800);
 });
 </script>
