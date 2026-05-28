@@ -882,15 +882,6 @@ function loadAll(){
   if(state.settings.syncCode){startCloudSync(state.settings.syncCode);}
 }
 
-// ===== CLOUD SYNC (GitHub API) =====
-let _syncCode='';
-let _syncTimer=null;
-let _syncPaused=false;
-let _lastCloudHash='';
-let _syncFileSha='';
-const SYNC_REPO='jbsilver27/family-hub';
-const SYNC_FILE='sync.json';
-
 function strHash(s){let h=5381,i=s.length;while(i)h=h*33^s.charCodeAt(--i);return(h>>>0).toString(36);}
 
 var _syncCode=null,_syncInterval=null,_syncFileSha=null,_lastCloudHash=null,_syncPaused=false,_lastSyncTime=null;
