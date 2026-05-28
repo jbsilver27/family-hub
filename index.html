@@ -319,58 +319,6 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
 .store-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(0,0,0,0.04);border-radius:8px;font-size:14px;}
 .store-remove-btn{background:none;border:none;color:#ff7675;font-size:18px;cursor:pointer;padding:0 4px;line-height:1;}
 </style>
-<!-- Firebase SDK -->
-<script type="module">
-  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-  import { getDatabase, ref, set, onValue, off } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-  window._fbApp = null;
-  window._fbDb = null;
-  window._fbRef = null;
-  window._fbInitialized = false;
-  window._fbSuppressNext = false;
-
-  window.initFirebase = function(config) {
-    try {
-      if (window._fbApp) {
-        try { window._fbApp.delete(); } catch(e) {}
-      }
-      window._fbApp = initializeApp(config, 'family-hub-' + Date.now());
-      window._fbDb = getDatabase(window._fbApp);
-      window._fbRef = ref(window._fbDb, 'familyHub/state');
-      window._fbInitialized = true;
-
-      // Real-time listener - when data changes on another device, update UI
-      onValue(window._fbRef, (snapshot) => {
-        if (window._fbSuppressNext) { window._fbSuppressNext = false; return; }
-        const data = snapshot.val();
-        if (!data) return;
-        // Merge Firebase data into state (preserve UI-only keys)
-        const uiKeys = ['_quickShop','_storeFilter','_taskBucket','_weatherCache','_weatherTs'];
-        const merged = Object.assign({}, data);
-        uiKeys.forEach(k => { if (window.state && window.state[k] !== undefined) merged[k] = window.state[k]; });
-        window.state = merged;
-        if (window.renderAll) window.renderAll();
-      });
-
-      console.log('Firebase initialized successfully');
-      return true;
-    } catch(e) {
-      console.warn('Firebase init error:', e.message);
-      window._fbInitialized = false;
-      return false;
-    }
-  };
-
-  window.fbSave = function(stateObj) {
-    if (!window._fbInitialized || !window._fbRef) return;
-    try {
-      window._fbSuppressNext = true;
-      set(window._fbRef, stateObj);
-    } catch(e) {
-      console.warn('Firebase save error:', e.message);
-    }
-  };
-</script>
 </head>
 <body>
 
@@ -761,15 +709,18 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
     <div class="settings-row"><span class="settings-row-label">Test connection</span><button class="settings-btn primary" onclick="loadGCalEvents(true)">Sync Now</button></div>
   </div>
   <div class="settings-section">
-    <div class="settings-section-title">Cloud Sync (Real-Time, All Devices)</div>
-    <div class="settings-tip" style="background:#e8f5e9;border-color:#4caf50;">
-      <b>How to connect:</b> Create a <em>free</em> Firebase project at <a href="https://console.firebase.google.com" target="_blank" style="color:#4caf50;">console.firebase.google.com</a> (takes 2 min, no credit card). Then: Add project &rarr; name it "family-hub" &rarr; Create Realtime Database (test mode) &rarr; Project Settings &rarr; Add App (web) &rarr; copy the <em>firebaseConfig</em> values below. Once connected, all devices sync instantly!
+    <div class="settings-section-title">Family Sync (All Devices)</div>
+    <div class="settings-tip" style="background:#f3e5f5;border-color:#9c6fdb;">
+      <b>Setup (one-time, 30 seconds):</b> Go to GitHub.com → click your profile picture → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token → check the <em>repo</em> box → Generate. Copy that token and paste it below on <em>every device</em>. Done — all devices sync automatically!
     </div>
-    <div class="settings-row"><span class="settings-row-label">API Key</span><input type="text" id="sfbApiKey" placeholder="AIzaSy..." style="flex:1;padding:8px;border:1px solid #e0d6f0;border-radius:8px;font-size:13px;"></div>
-    <div class="settings-row"><span class="settings-row-label">Database URL</span><input type="text" id="sfbDbUrl" placeholder="https://your-app-default-rtdb.firebaseio.com" style="flex:1;padding:8px;border:1px solid #e0d6f0;border-radius:8px;font-size:13px;"></div>
-    <div class="settings-row"><span class="settings-row-label">Project ID</span><input type="text" id="sfbProjectId" placeholder="your-app-12345" style="flex:1;padding:8px;border:1px solid #e0d6f0;border-radius:8px;font-size:13px;"></div>
-    <div class="settings-row"><span class="settings-row-label">App ID</span><input type="text" id="sfbAppId" placeholder="1:123456:web:abc..." style="flex:1;padding:8px;border:1px solid #e0d6f0;border-radius:8px;font-size:13px;"></div>
-    <div class="settings-row"><span class="settings-row-label">Status</span><span id="sfbStatus" style="font-size:13px;color:#888;">Not connected</span></div>
+    <div class="settings-row">
+      <span class="settings-row-label">Sync Code</span>
+      <input type="password" id="sSyncPass" placeholder="ghp_xxxxxxxxxxxx" style="flex:1;padding:8px;border:1px solid #e0d6f0;border-radius:8px;font-size:13px;">
+    </div>
+    <div class="settings-row">
+      <span class="settings-row-label">Sync Status</span>
+      <span id="sSyncStatus" style="font-size:13px;color:#888;">Not connected</span>
+    </div>
   </div>
   <div class="settings-section">
     <div class="settings-section-title">Data</div>
@@ -900,22 +851,20 @@ let state={
   _quickShop:false,_storeFilter:'All',_taskBucket:'today',_weatherCache:null,_weatherTs:0
 };
 
-window.state=state;
 
 function saveAll(){
   const s=JSON.parse(JSON.stringify(state));
   delete s._quickShop;delete s._storeFilter;delete s._taskBucket;delete s._weatherCache;delete s._weatherTs;
-  const SK2='fhub_v3';
-  try{localStorage.setItem(SK2,JSON.stringify(s));}catch(e){}
-  // Firebase sync
-  if(window._fbInitialized){window.fbSave(s);}
+  const SK='fhub_v3';
+  try{localStorage.setItem(SK,JSON.stringify(s));}catch(e){}
+  syncToCloud(s);
 }
 
 function loadAll(){
   try{
-    const SK2='fhub_v3';
-    const raw=localStorage.getItem(SK2);
-    if(raw){const parsed=JSON.parse(raw);['events','groceries','staples','recipes','meals','tasks','kids','pet','settings'].forEach(k=>{if(parsed[k]!==undefined)state[k]=parsed[k];});if(parsed.meds)state.meds=parsed.meds;}
+    const SK='fhub_v3';
+    const raw=localStorage.getItem(SK);
+    if(raw){const p=JSON.parse(raw);['events','groceries','staples','recipes','meals','tasks','kids','pet','settings'].forEach(k=>{if(p[k]!==undefined)state[k]=p[k];});if(p.meds)state.meds=p.meds;}
   }catch(e){}
   if(!state.meds)state.meds={today:{AM:false,PM:false},lastReset:'',AM_time:'',PM_time:''};
   if(!state.settings.ics1)state.settings.ics1='https://calendar.google.com/calendar/ical/jbsilver27%40gmail.com/private-858861f0c0f108e5f96601e7de04dbfa/basic.ics';
@@ -923,11 +872,85 @@ function loadAll(){
   if(!state.settings.ics3)state.settings.ics3='';
   if(!state.settings.ics4)state.settings.ics4='';
   if(!state.settings.ics5)state.settings.ics5='';
-  // Init Firebase if credentials saved
-  if(state.settings.fbApiKey&&state.settings.fbDbUrl){
-    const cfg={apiKey:state.settings.fbApiKey,databaseURL:state.settings.fbDbUrl,projectId:state.settings.fbProjectId||'',appId:state.settings.fbAppId||''};
-    if(window.initFirebase)window.initFirebase(cfg);
-  }
+  if(state.settings.syncCode){startCloudSync(state.settings.syncCode);}
+}
+
+// ===== CLOUD SYNC (GitHub API) =====
+let _syncCode='';
+let _syncTimer=null;
+let _syncPaused=false;
+let _lastCloudHash='';
+let _syncFileSha='';
+const SYNC_REPO='jbsilver27/family-hub';
+const SYNC_FILE='sync.json';
+
+function strHash(s){let h=5381;for(let i=0;i<s.length;i++){h=((h<<5)+h)+s.charCodeAt(i);}return Math.abs(h).toString(36);}
+
+function syncStatusEl(msg,color){
+  const el=document.getElementById('sSyncStatus');
+  if(el){el.textContent=msg;el.style.color=color||'#888';}
+}
+
+function startCloudSync(code){
+  _syncCode=code;
+  if(_syncTimer)clearInterval(_syncTimer);
+  pullFromCloud();
+  _syncTimer=setInterval(pullFromCloud,20000);
+}
+
+function stopCloudSync(){
+  if(_syncTimer)clearInterval(_syncTimer);
+  _syncTimer=null;_syncCode='';_syncFileSha='';
+  syncStatusEl('Not connected','#888');
+}
+
+function syncToCloud(stateObj){
+  if(!_syncCode||_syncPaused)return;
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify(stateObj))));
+  const body={message:'sync',content:content};
+  if(_syncFileSha)body.sha=_syncFileSha;
+  fetch('https://api.github.com/repos/'+SYNC_REPO+'/contents/'+SYNC_FILE,{
+    method:'PUT',
+    headers:{'Authorization':'token '+_syncCode,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
+    body:JSON.stringify(body)
+  }).then(r=>r.json()).then(d=>{
+    if(d.content&&d.content.sha){_syncFileSha=d.content.sha;}
+    _lastCloudHash=strHash(JSON.stringify(stateObj));
+    syncStatusEl('\u2713 Synced','#4caf50');
+  }).catch(()=>syncStatusEl('Sync error \u2014 check code','#e57373'));
+}
+
+function pullFromCloud(){
+  if(!_syncCode)return;
+  fetch('https://api.github.com/repos/'+SYNC_REPO+'/contents/'+SYNC_FILE,{
+    headers:{'Authorization':'token '+_syncCode,'Accept':'application/vnd.github.v3+json','Cache-Control':'no-cache'}
+  }).then(r=>{
+    if(r.status===404){
+      // First time - push our state to create the file
+      const s2=JSON.parse(JSON.stringify(state));
+      delete s2._quickShop;delete s2._storeFilter;delete s2._taskBucket;delete s2._weatherCache;delete s2._weatherTs;
+      syncToCloud(s2);
+      syncStatusEl('\u2713 Connected \u2014 syncing','#4caf50');
+      return null;
+    }
+    if(r.status===401){syncStatusEl('Invalid code \u2014 check settings','#e57373');return null;}
+    return r.json();
+  }).then(data=>{
+    if(!data)return;
+    _syncFileSha=data.sha||'';
+    const raw=decodeURIComponent(escape(atob(data.content.replace(/
+/g,''))));
+    const remote=JSON.parse(raw);
+    const remoteHash=strHash(raw);
+    if(remoteHash===_lastCloudHash)return;
+    _lastCloudHash=remoteHash;
+    _syncPaused=true;
+    ['events','groceries','staples','recipes','meals','tasks','kids','pet','meds'].forEach(k=>{if(remote[k]!==undefined)state[k]=remote[k];});
+    try{localStorage.setItem('fhub_v3',JSON.stringify(state));}catch(e){}
+    _syncPaused=false;
+    renderToday();
+    syncStatusEl('\u2713 Updated from cloud','#4caf50');
+  }).catch(()=>{});
 }
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -989,8 +1012,7 @@ function checkDailyReset(){
 
 // ===== TODAY =====
 function renderToday(){updateStats();renderDinnerBanner();renderSchedule();renderMeds();renderKidsToday();renderPetToday();
-window.renderAll=renderToday;
-window.saveAll=saveAll;
+;
 }
 
 function updateStats(){
@@ -1695,19 +1717,11 @@ function openSettings(){
   document.getElementById('sWeatherLoc').value=s.weatherLoc||'San Francisco, CA';
   document.getElementById('sIcs1').value=s.ics1||'';document.getElementById('sIcs2').value=s.ics2||'';const _si3=document.getElementById('sIcs3');if(_si3)_si3.value=s.ics3||'';const _si4=document.getElementById('sIcs4');if(_si4)_si4.value=s.ics4||'';const _si5=document.getElementById('sIcs5');if(_si5)_si5.value=s.ics5||'';
   const slEl=document.getElementById('storeList');if(slEl){slEl.innerHTML=(s.stores||[]).map((st,i)=>'<div class="store-item"><span>'+st+'</span><button class="store-remove-btn" onclick="removeStore('+i+')">\u00D7</button></div>').join('');}
-  // Populate Firebase config fields
-  const _si_fbApiKey=document.getElementById('sfbApiKey');
-  if(_si_fbApiKey)_si_fbApiKey.value=s.fbApiKey||'';
-  const _si_fbDbUrl=document.getElementById('sfbDbUrl');
-  if(_si_fbDbUrl)_si_fbDbUrl.value=s.fbDbUrl||'';
-  const _si_fbProjectId=document.getElementById('sfbProjectId');
-  if(_si_fbProjectId)_si_fbProjectId.value=s.fbProjectId||'';
-  const _si_fbAppId=document.getElementById('sfbAppId');
-  if(_si_fbAppId)_si_fbAppId.value=s.fbAppId||'';
-  // Update connection status
-  const _si_fbStatus=document.getElementById('sfbStatus');
-  if(_si_fbStatus)_si_fbStatus.textContent=window._fbInitialized?'Connected!':'Not connected';
-  if(_si_fbStatus)_si_fbStatus.style.color=window._fbInitialized?'#4caf50':'#888';
+  // Populate sync code field
+  const _si_pass=document.getElementById('sSyncPass');
+  if(_si_pass)_si_pass.value=s.syncCode||'';
+  const _si_status=document.getElementById('sSyncStatus');
+  if(_si_status){_si_status.textContent=_syncTimer?'\u2713 Connected \u2014 syncing':'Not connected';_si_status.style.color=_syncTimer?'#4caf50':'#888';}
   openModal('settingsModal');
 }
 function saveSettings(){
@@ -1727,22 +1741,12 @@ function saveSettings(){
   state.pet.name=state.settings.petName;state.pet.breed=state.settings.petBreed;
   state.kids[0].name=state.settings.k1;state.kids[1].name=state.settings.k2;
   state._weatherCache=null;state._weatherTs=0;
-  // Save Firebase config
-  const _fbApiKey=document.getElementById('sfbApiKey');
-  const _fbDbUrl=document.getElementById('sfbDbUrl');
-  const _fbProjectId=document.getElementById('sfbProjectId');
-  const _fbAppId=document.getElementById('sfbAppId');
-  if(_fbApiKey)state.settings.fbApiKey=(_fbApiKey.value||'').trim();
-  if(_fbDbUrl)state.settings.fbDbUrl=(_fbDbUrl.value||'').trim();
-  if(_fbProjectId)state.settings.fbProjectId=(_fbProjectId.value||'').trim();
-  if(_fbAppId)state.settings.fbAppId=(_fbAppId.value||'').trim();
-  // Init or re-init Firebase if credentials provided
-  if(state.settings.fbApiKey&&state.settings.fbDbUrl&&window.initFirebase){
-    const _cfg={apiKey:state.settings.fbApiKey,databaseURL:state.settings.fbDbUrl,projectId:state.settings.fbProjectId||'',appId:state.settings.fbAppId||''};
-    const _ok=window.initFirebase(_cfg);
-    const _statusEl=document.getElementById('sfbStatus');
-    if(_statusEl)_statusEl.textContent=_ok?'Connected!':'Error - check credentials';
-    if(_statusEl)_statusEl.style.color=_ok?'#4caf50':'#e57373';
+  // Save sync code and start/stop cloud sync
+  const _spEl=document.getElementById('sSyncPass');
+  const _newCode=(_spEl?_spEl.value||'':'').trim();
+  if(_newCode!==state.settings.syncCode){
+    state.settings.syncCode=_newCode;
+    if(_newCode){startCloudSync(_newCode);}else{stopCloudSync();}
   }
   saveAll();closeModal('settingsModal');applyNames();renderToday();
   showToast('Settings saved!');
