@@ -1084,7 +1084,7 @@ function loadGCalEvents(manual){
   const urls=[ics1,ics2].filter(u=>u.trim());
   urls.forEach(url=>{
     // Use allorigins proxy to bypass CORS
-    const proxy='https://corsproxy.io/?'+encodeURIComponent(url);
+    const proxy='https://corsproxy.io/?'+encodeURIComponent(url+'?_='+Date.now());
     promises.push(
       fetch(proxy).then(r=>r.text()).then(text=>{
         const events=parseICS(text);
@@ -1153,6 +1153,83 @@ function parseICSTime(s){
   return'';
 }
 
+
+function parseICS(text){
+  const events=[];
+  if(!text)return events;
+  const lines=text.replace(/\r\n|\r/g,'\n').replace(/\n[ \t]/g,'').split('\n');
+  let cur=null;
+  const todayD=new Date();todayD.setHours(0,0,0,0);
+  const limitD=new Date();limitD.setDate(limitD.getDate()+365);
+  for(let i=0;i<lines.length;i++){
+    const ln=lines[i];
+    if(ln==='BEGIN:VEVENT'){cur={};continue;}
+    if(ln==='END:VEVENT'){
+      if(cur&&cur.date){
+        const d=parseLocalDate(cur.date);
+        if(d>=todayD&&d<=limitD){
+          events.push({id:'gcal_'+Math.random(),title:cur.summary||'',date:cur.date,time:cur.time||'',endTime:cur.endTime||'',who:'',note:cur.description||'',recur:'none',source:'gcal'});
+        }
+      }
+      cur=null;continue;
+    }
+    if(!cur)continue;
+    const col=ln.indexOf(':');
+    if(col<0)continue;
+    const key=ln.substring(0,col);
+    const val=ln.substring(col+1);
+    const baseKey=key.split(';')[0];
+    if(baseKey==='DTSTART'){const r=parseICSDateTime(key,val);cur.date=r.date;cur.time=r.time;}
+    else if(baseKey==='DTEND'){const r=parseICSDateTime(key,val);cur.endTime=r.time;}
+    else if(baseKey==='SUMMARY')cur.summary=val.replace(/\\,/g,',').replace(/\\n/g,' ');
+    else if(baseKey==='DESCRIPTION')cur.description=val.replace(/\\,/g,',').replace(/\\n/g,' ').substring(0,120);
+  }
+  return events;
+}
+
+function parseICSDateTime(key,val){
+  if(!val)return{date:'',time:''};
+  try{
+    const clean=val.replace(/\r/g,'').trim();
+    if(key.includes('VALUE=DATE')||(/^\d{8}$/.test(clean))){
+      const y=parseInt(clean.slice(0,4)),mo=parseInt(clean.slice(4,6))-1,d=parseInt(clean.slice(6,8));
+      const dt=new Date(y,mo,d);
+      return{date:fmtLocalDate(dt),time:''};
+    }
+    if(clean.includes('T')){
+      const isUTC=clean.endsWith('Z');
+      const datePart=clean.slice(0,8);
+      const timePart=clean.slice(9,15);
+      const y=parseInt(datePart.slice(0,4)),mo=parseInt(datePart.slice(4,6))-1,d=parseInt(datePart.slice(6,8));
+      const h=parseInt(timePart.slice(0,2)||'0'),mi=parseInt(timePart.slice(2,4)||'0'),sc=parseInt(timePart.slice(4,6)||'0');
+      const dt=isUTC?new Date(Date.UTC(y,mo,d,h,mi,sc)):new Date(y,mo,d,h,mi,sc);
+      return{date:fmtLocalDate(dt),time:String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0')};
+    }
+    const y=parseInt(clean.slice(0,4)),mo=parseInt(clean.slice(4,6))-1,d=parseInt(clean.slice(6,8));
+    return{date:fmtLocalDate(new Date(y,mo,d)),time:''};
+  }catch(e){return{date:'',time:''}}
+}
+
+function fmtLocalDate(dt){
+  if(!dt||isNaN(dt))return '';
+  return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+}
+
+function parseICSDate(s){
+  if(!s)return null;
+  try{
+    const r=parseICSDateTime('',s.replace(/.*:/,''));
+    return r.date?parseLocalDate(r.date):null;
+  }catch(e){return null}
+}
+
+function parseICSTime(s){
+  if(!s)return '';
+  try{
+    const r=parseICSDateTime('',s);
+    return r.time||'';
+  }catch(e){return ''}
+}
 
 // ===== EVENTS =====
 function openAddEventModal(){
