@@ -709,21 +709,28 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
     <div class="settings-row"><span class="settings-row-label">Test connection</span><button class="settings-btn primary" onclick="loadGCalEvents(true)">Sync Now</button></div>
   </div>
   <div class="settings-section">
-    <div class="settings-section-title">Family Sync (All Devices)</div>
-    <div class="settings-tip" style="background:#f3e5f5;border-color:#9c6fdb;">
-      <b>Setup (one-time, 30 seconds):</b> Go to GitHub.com → click your profile picture → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token → check the <em>repo</em> box → Generate. Copy that token and paste it below on <em>every device</em>. Done — all devices sync automatically!
+    <div class="settings-section">
+      <div class="section-title">Family Sync (All Devices)</div>
+      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:14px 16px;margin-bottom:14px;font-size:13px;line-height:1.6;color:#0c4a6e;">
+        <strong>One-time setup (30 seconds):</strong><br>
+        1. Tap the button below to create your free Sync Token<br>
+        2. Copy the token (starts with <code style="background:#e0f2fe;padding:1px 4px;border-radius:3px;">ghp_</code>)<br>
+        3. Paste it in the box below on <em>every device</em><br>
+        All devices will sync automatically!
+      </div>
+      <div class="setting-row">
+        <label>Step 1 &mdash; Create Token</label>
+        <a href="https://github.com/settings/tokens/new?scopes=repo&description=FamilyHub+Sync" target="_blank" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;text-decoration:none;font-weight:600;white-space:nowrap;">Open GitHub &#8594;</a>
+      </div>
+      <div class="setting-row">
+        <label>Step 2 &mdash; Paste Token</label>
+        <input id="sSyncPass" type="password" placeholder="ghp_xxxxxxxxxxxx" style="font-family:monospace;letter-spacing:1px;" oninput="onSyncCodeInput(this.value)">
+      </div>
+      <div class="setting-row">
+        <label>Sync Status</label>
+        <span id="sSyncStatus" style="font-weight:600;">Not connected</span>
+      </div>
     </div>
-    <div class="settings-row">
-      <span class="settings-row-label">Sync Code</span>
-      <input type="password" id="sSyncPass" placeholder="ghp_xxxxxxxxxxxx" style="flex:1;padding:8px;border:1px solid #e0d6f0;border-radius:8px;font-size:13px;">
-    </div>
-    <div class="settings-row">
-      <span class="settings-row-label">Sync Status</span>
-      <span id="sSyncStatus" style="font-size:13px;color:#888;">Not connected</span>
-    </div>
-  </div>
-  <div class="settings-section">
-    <div class="settings-section-title">Data</div>
     <div class="settings-row"><span class="settings-row-label">Export all data</span><button class="settings-btn safe" onclick="exportData()">Export JSON</button></div>
     <div class="settings-row"><span class="settings-row-label">Reset all data</span><button class="settings-btn danger" onclick="resetData()">Reset</button></div>
   </div>
@@ -884,40 +891,92 @@ let _syncFileSha='';
 const SYNC_REPO='jbsilver27/family-hub';
 const SYNC_FILE='sync.json';
 
-function strHash(s){let h=5381;for(let i=0;i<s.length;i++){h=((h<<5)+h)+s.charCodeAt(i);}return Math.abs(h).toString(36);}
+function strHash(s){let h=5381,i=s.length;while(i)h=h*33^s.charCodeAt(--i);return(h>>>0).toString(36);}
 
-function syncStatusEl(msg,color){
-  const el=document.getElementById('sSyncStatus');
-  if(el){el.textContent=msg;el.style.color=color||'#888';}
+var _syncCode=null,_syncInterval=null,_syncFileSha=null,_lastCloudHash=null,_syncPaused=false,_lastSyncTime=null;
+
+function onSyncCodeInput(val){
+  var code=(val||"").trim();
+  if(code.length>10){
+    state.settings.syncCode=code;
+    saveAll();
+    startCloudSync(code);
+  }
 }
 
 function startCloudSync(code){
+  if(_syncInterval)clearInterval(_syncInterval);
   _syncCode=code;
-  if(_syncTimer)clearInterval(_syncTimer);
+  var el=document.getElementById("sSyncStatus");
+  if(el)el.textContent="Connecting...";
   pullFromCloud();
-  _syncTimer=setInterval(pullFromCloud,20000);
+  _syncInterval=setInterval(function(){
+    if(!_syncPaused)syncToCloud(state);
+  },15000);
 }
 
 function stopCloudSync(){
-  if(_syncTimer)clearInterval(_syncTimer);
-  _syncTimer=null;_syncCode='';_syncFileSha='';
-  syncStatusEl('Not connected','#888');
+  if(_syncInterval)clearInterval(_syncInterval);
+  _syncInterval=null;
+  _syncCode=null;
+  var el=document.getElementById("sSyncStatus");
+  if(el)el.textContent="Not connected";
 }
 
 function syncToCloud(stateObj){
-  if(!_syncCode||_syncPaused)return;
-  const content=btoa(unescape(encodeURIComponent(JSON.stringify(stateObj))));
-  const body={message:'sync',content:content};
+  if(!_syncCode)return;
+  var content=btoa(unescape(encodeURIComponent(JSON.stringify(stateObj))));
+  var url="https://api.github.com/repos/jbsilver27/family-hub/contents/sync.json";
+  var body={message:"sync",content:content};
   if(_syncFileSha)body.sha=_syncFileSha;
-  fetch('https://api.github.com/repos/'+SYNC_REPO+'/contents/'+SYNC_FILE,{
-    method:'PUT',
-    headers:{'Authorization':'token '+_syncCode,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
-    body:JSON.stringify(body)
-  }).then(r=>r.json()).then(d=>{
-    if(d.content&&d.content.sha){_syncFileSha=d.content.sha;}
-    _lastCloudHash=strHash(JSON.stringify(stateObj));
-    syncStatusEl('\u2713 Synced','#4caf50');
-  }).catch(()=>syncStatusEl('Sync error \u2014 check code','#e57373'));
+  fetch(url,{method:"PUT",headers:{"Authorization":"token "+_syncCode,"Content-Type":"application/json","Accept":"application/vnd.github.v3+json"},body:JSON.stringify(body)})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d&&d.content&&d.content.sha)_syncFileSha=d.content.sha;
+      _lastSyncTime=Date.now();
+      updateSyncStatus();
+    }).catch(function(e){console.warn("sync push err:",e);});
+}
+
+function pullFromCloud(){
+  if(!_syncCode)return;
+  var url="https://api.github.com/repos/jbsilver27/family-hub/contents/sync.json";
+  fetch(url,{headers:{"Authorization":"token "+_syncCode,"Accept":"application/vnd.github.v3+json"}})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(!data||!data.content){
+        var el=document.getElementById("sSyncStatus");
+        if(el)el.innerHTML="<span style='color:#16a34a;font-weight:700'>&#10003; Connected</span> (no data yet &mdash; saving now...)";
+        syncToCloud(state);
+        return;
+      }
+      _syncFileSha=data.sha;
+      var raw=decodeURIComponent(escape(atob(data.content.split("\n").join(""))));
+      var remote=JSON.parse(raw);
+      var remoteHash=strHash(JSON.stringify(remote));
+      if(remoteHash===_lastCloudHash){updateSyncStatus();return;}
+      _lastCloudHash=remoteHash;
+      _syncPaused=true;
+      var merged=Object.assign({},remote);
+      merged.settings=Object.assign({},remote.settings,{syncCode:_syncCode});
+      Object.assign(state,merged);
+      saveAll();
+      renderToday();
+      _lastSyncTime=Date.now();
+      updateSyncStatus();
+      setTimeout(function(){_syncPaused=false;},2000);
+    }).catch(function(e){
+      var el=document.getElementById("sSyncStatus");
+      if(el)el.innerHTML="<span style='color:#dc2626'>&#9888; Check token &mdash; connection failed</span>";
+      console.warn("sync pull err:",e);
+    });
+}
+
+function updateSyncStatus(){
+  var el=document.getElementById("sSyncStatus");
+  if(!el||!_syncCode)return;
+  var ago=_lastSyncTime?Math.round((Date.now()-_lastSyncTime)/1000)+"s ago":"syncing...";
+  el.innerHTML="<span style='color:#16a34a;font-weight:700'>&#10003; Connected</span> &mdash; last sync: "+ago;
 }
 
 function pullFromCloud(){
@@ -1719,8 +1778,7 @@ function openSettings(){
   // Populate sync code field
   const _si_pass=document.getElementById('sSyncPass');
   if(_si_pass)_si_pass.value=s.syncCode||'';
-  const _si_status=document.getElementById('sSyncStatus');
-  if(_si_status){_si_status.textContent=_syncTimer?'\u2713 Connected \u2014 syncing':'Not connected';_si_status.style.color=_syncTimer?'#4caf50':'#888';}
+  updateSyncStatus();
   openModal('settingsModal');
 }
 function saveSettings(){
@@ -1742,11 +1800,10 @@ function saveSettings(){
   state._weatherCache=null;state._weatherTs=0;
   // Save sync code and start/stop cloud sync
   const _spEl=document.getElementById('sSyncPass');
-  const _newCode=(_spEl?_spEl.value||'':'').trim();
-  if(_newCode!==state.settings.syncCode){
-    state.settings.syncCode=_newCode;
-    if(_newCode){startCloudSync(_newCode);}else{stopCloudSync();}
-  }
+  const _newCode=(_spEl?_spEl.value:'').trim()||state.settings.syncCode||'';
+  state.settings.syncCode=_newCode;
+  if(_newCode&&_newCode!==_syncCode)startCloudSync(_newCode);
+  else if(!_newCode&&_syncCode)stopCloudSync();
   saveAll();closeModal('settingsModal');applyNames();renderToday();
   showToast('Settings saved!');
   if(state.settings.ics1||state.settings.ics2||state.settings.ics3||state.settings.ics4||state.settings.ics5)setTimeout(()=>loadGCalEvents(false),500);
