@@ -684,16 +684,28 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
   <div class="settings-section"><div class="settings-section-title">Grocery Stores</div><div id="storeList" class="store-list"></div><div class="settings-row" style="gap:8px;margin-top:8px"><input id="newStoreName" placeholder="Add a store..." class="field-input" style="flex:1"><button class="btn-secondary" style="padding:8px 14px;font-size:13px" onclick="addStore()">+ Add</button></div></div><div class="settings-section">
     <div class="settings-section-title">Google Calendar (Free ICS Sync)</div>
     <div class="gcal-info">
-      <strong>How to connect:</strong> In Google Calendar, open your calendar settings, find <em>"Integrate calendar"</em>, and copy the <em>Secret address in iCal format</em> URL. Paste it below. Events will auto-load every time the page opens. Free forever, no API key needed.
+      <strong>How to connect:</strong> In Google Calendar: go to <em>Settings</em>, then click <em>each calendar</em> in the left sidebar (main, work, birthdays, family, etc.) → "Integrate calendar" → copy the <em>Secret address in iCal format</em>. Add each one below — <b>most people need 3-5 URLs</b> to see all their events.
     </div>
     <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
       <span class="settings-row-label">Calendar 1 ICS URL (e.g. yours)</span>
       <input id="sIcs1" style="width:100%;" placeholder="https://calendar.google.com/calendar/ical/...">
     </div>
     <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
-      <span class="settings-row-label">Calendar 2 ICS URL (e.g. Erick's)</span>
+      <span class="settings-row-label">Calendar 2 ICS URL (e.g. spouse/partner)</span>
       <input id="sIcs2" style="width:100%;" placeholder="https://calendar.google.com/calendar/ical/...">
     </div>
+      <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+        <span class="settings-row-label">Calendar 3 ICS URL (optional)</span>
+        <input id="sIcs3" style="width:100%;" placeholder="https://calendar.google.com/calendar/ical/...">
+      </div>
+      <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+        <span class="settings-row-label">Calendar 4 ICS URL (optional)</span>
+        <input id="sIcs4" style="width:100%;" placeholder="https://calendar.google.com/calendar/ical/...">
+      </div>
+      <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+        <span class="settings-row-label">Calendar 5 ICS URL (optional)</span>
+        <input id="sIcs5" style="width:100%;" placeholder="https://calendar.google.com/calendar/ical/...">
+      </div>
     <div class="settings-row"><span class="settings-row-label">Test connection</span><button class="settings-btn primary" onclick="loadGCalEvents(true)">Sync Now</button></div>
   </div>
   <div class="settings-section">
@@ -821,7 +833,7 @@ let state={
   kids:[{name:'Lily',activities:[]},{name:'Emma',activities:[]}],
   pet:{name:'Biscuit',breed:'Good boy',today:{fedAM:false,fedAfternoon:false,fedPM:false,walked:false,meds:false},lastReset:'',reminders:[]},
   meds:{today:{AM:false,PM:false},lastReset:'',AM_time:'',PM_time:''},
-  settings:{p1:'Mom',p2:'Erick',k1:'Lily',k2:'Emma',petName:'Biscuit',petBreed:'Good boy',stores:['Costco','Target',"Trader Joe's",'Whole Foods','Safeway','Albertsons','Amazon'],weatherLoc:'San Francisco, CA',ics1:'',ics2:''},
+  settings:{p1:'Mom',p2:'Erick',k1:'Lily',k2:'Emma',petName:'Biscuit',petBreed:'Good boy',stores:['Costco','Target',"Trader Joe's",'Whole Foods','Safeway','Albertsons','Amazon'],weatherLoc:'San Francisco, CA',ics1:'',ics2:'',ics3:'',ics4:'',ics5:''},
   _quickShop:false,_storeFilter:'All',_taskBucket:'today',_weatherCache:null,_weatherTs:0
 };
 
@@ -1076,12 +1088,15 @@ let _gcalEvents=[];
 function loadGCalEvents(manual){
   const ics1=(state.settings&&state.settings.ics1)||'';
   const ics2=(state.settings&&state.settings.ics2)||'';
+  const ics3=(state.settings&&state.settings.ics3)||'';
+  const ics4=(state.settings&&state.settings.ics4)||'';
+  const ics5=(state.settings&&state.settings.ics5)||'';
   if(!ics1&&!ics2){if(manual)showToast('No ICS URL set in Settings');return;}
   const statusEl=document.getElementById('gcalStatus');
   if(statusEl){statusEl.style.display='';statusEl.textContent='Syncing Google Calendar...';}
   window._gcalEvents=[];
   const promises=[];
-  const urls=[ics1,ics2].filter(u=>u.trim());
+  const urls=[ics1,ics2,ics3,ics4,ics5].filter(u=>u.trim());
   urls.forEach(url=>{
     // Use allorigins proxy to bypass CORS
     const proxy='https://corsproxy.io/?'+encodeURIComponent(url+'?_='+Date.now());
@@ -1599,7 +1614,7 @@ function openSettings(){
   document.getElementById('sK1').value=s.k1||'Lily';document.getElementById('sK2').value=s.k2||'Emma';
   document.getElementById('sPetName').value=s.petName||'Biscuit';document.getElementById('sPetBreed').value=s.petBreed||'Good boy';
   document.getElementById('sWeatherLoc').value=s.weatherLoc||'San Francisco, CA';
-  document.getElementById('sIcs1').value=s.ics1||'';document.getElementById('sIcs2').value=s.ics2||'';
+  document.getElementById('sIcs1').value=s.ics1||'';document.getElementById('sIcs2').value=s.ics2||'';const _si3=document.getElementById('sIcs3');if(_si3)_si3.value=s.ics3||'';const _si4=document.getElementById('sIcs4');if(_si4)_si4.value=s.ics4||'';const _si5=document.getElementById('sIcs5');if(_si5)_si5.value=s.ics5||'';
   const slEl=document.getElementById('storeList');if(slEl){slEl.innerHTML=(s.stores||[]).map((st,i)=>'<div class="store-item"><span>'+st+'</span><button class="store-remove-btn" onclick="removeStore('+i+')">\u00D7</button></div>').join('');}
   openModal('settingsModal');
 }
@@ -1614,12 +1629,15 @@ function saveSettings(){
   state.settings.weatherLoc=document.getElementById('sWeatherLoc').value||'San Francisco, CA';
   state.settings.ics1=document.getElementById('sIcs1').value||'';
   state.settings.ics2=document.getElementById('sIcs2').value||'';
+  state.settings.ics3=(document.getElementById('sIcs3')||{}).value||'';
+  state.settings.ics4=(document.getElementById('sIcs4')||{}).value||'';
+  state.settings.ics5=(document.getElementById('sIcs5')||{}).value||'';
   state.pet.name=state.settings.petName;state.pet.breed=state.settings.petBreed;
   state.kids[0].name=state.settings.k1;state.kids[1].name=state.settings.k2;
   state._weatherCache=null;state._weatherTs=0;
   saveAll();closeModal('settingsModal');applyNames();renderToday();
   showToast('Settings saved!');
-  if(state.settings.ics1||state.settings.ics2)setTimeout(()=>loadGCalEvents(false),500);
+  if(state.settings.ics1||state.settings.ics2||state.settings.ics3||state.settings.ics4||state.settings.ics5)setTimeout(()=>loadGCalEvents(false),500);
 }
 function applyNames(){
   const s=state.settings||{};const k1=s.k1||'Lily';const k2=s.k2||'Emma';const pn=s.petName||'Biscuit';const pb=s.petBreed||'Good boy';
