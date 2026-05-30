@@ -911,13 +911,30 @@ function stopCloudSync(){
   if(el)el.textContent="Not connected";
 }
 
-function syncToCloud(st){
-  if(!st)st=loadAll();
-  const payload=JSON.stringify({version:1,ts:Date.now(),state:st});
-  const b64=btoa(unescape(encodeURIComponent(payload)));
-  _lastSyncTime=Date.now();
-  updateSyncStatus();
-}
+function syncToCloud(st) {
+    if (window._syncPaused) return;
+    if (!st) return;
+    var now = Date.now();
+    if (window._lastPushTime && (now - window._lastPushTime) < 5000) {
+      clearTimeout(window._pushDebounceTimer);
+      window._pushDebounceTimer = setTimeout(function(){ syncToCloud(JSON.parse(localStorage.getItem('fhub_v3')||'{}')); }, 5200);
+      return;
+    }
+    window._lastPushTime = now;
+    var pat = localStorage.getItem('fhub_pat') || '';
+    if (!pat) { updateSyncStatus(); return; }
+    try {
+      var json = JSON.stringify({version:1, ts:now, state:st});
+      var b64 = btoa(unescape(encodeURIComponent(json)));
+      fetch('https://api.github.com/repos/jbsilver27/family-hub/actions/workflows/sync.yml/dispatches',{
+        method:'POST',
+        headers:{'Authorization':'token '+pat,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
+        body:JSON.stringify({ref:'main',inputs:{data:b64}})
+      }).then(function(r){
+        if(r.status===204){window._lastSyncTime=Date.now();window._lastCloudHash=String(now);updateSyncStatus();}
+      }).catch(function(e){console.warn('sync push err',e);});
+    } catch(e){console.warn('syncToCloud err',e);}
+  }
 
 function pullFromCloud(){
   var RAW='https://raw.githubusercontent.com/jbsilver27/family-hub/main/sync.json';
