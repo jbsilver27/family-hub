@@ -896,14 +896,11 @@ function onSyncCodeInput(val){
 }
 
 function startCloudSync(code){
+  if(code)_syncCode=code;
   if(_syncInterval)clearInterval(_syncInterval);
-  _syncCode=code;
-  var el=document.getElementById("sSyncStatus");
-  if(el)el.textContent="Connecting...";
+  updateSyncStatus();
   pullFromCloud();
-  _syncInterval=setInterval(function(){
-    if(!_syncPaused)syncToCloud(state);
-  },15000);
+  _syncInterval=setInterval(pullFromCloud,15000);
 }
 
 function stopCloudSync(){
@@ -914,93 +911,44 @@ function stopCloudSync(){
   if(el)el.textContent="Not connected";
 }
 
-function syncToCloud(stateObj){
-  if(!_syncCode)return;
-  var content=btoa(unescape(encodeURIComponent(JSON.stringify(stateObj))));
-  var url="https://api.github.com/repos/jbsilver27/family-hub/contents/sync.json";
-  var body={message:"sync",content:content};
-  if(_syncFileSha)body.sha=_syncFileSha;
-  fetch(url,{method:"PUT",headers:{"Authorization":"token "+_syncCode,"Content-Type":"application/json","Accept":"application/vnd.github.v3+json"},body:JSON.stringify(body)})
-    .then(function(r){return r.json();})
-    .then(function(d){
-      if(d&&d.content&&d.content.sha)_syncFileSha=d.content.sha;
-      _lastSyncTime=Date.now();
-      updateSyncStatus();
-    }).catch(function(e){console.warn("sync push err:",e);});
+function syncToCloud(st){
+  if(!st)st=loadAll();
+  const payload=JSON.stringify({version:1,ts:Date.now(),state:st});
+  const b64=btoa(unescape(encodeURIComponent(payload)));
+  _lastSyncTime=Date.now();
+  updateSyncStatus();
 }
 
 function pullFromCloud(){
-  if(!_syncCode)return;
-  var url="https://api.github.com/repos/jbsilver27/family-hub/contents/sync.json";
-  fetch(url,{headers:{"Authorization":"token "+_syncCode,"Accept":"application/vnd.github.v3+json"}})
-    .then(function(r){return r.json();})
-    .then(function(data){
-      if(!data||!data.content){
-        var el=document.getElementById("sSyncStatus");
-        if(el)el.innerHTML="<span style='color:#16a34a;font-weight:700'>&#10003; Connected</span> (no data yet &mdash; saving now...)";
-        syncToCloud(state);
-        return;
-      }
-      _syncFileSha=data.sha;
-      var raw=decodeURIComponent(escape(atob(data.content.split("\n").join(""))));
-      var remote=JSON.parse(raw);
-      var remoteHash=strHash(JSON.stringify(remote));
-      if(remoteHash===_lastCloudHash){updateSyncStatus();return;}
-      _lastCloudHash=remoteHash;
-      _syncPaused=true;
-      var merged=Object.assign({},remote);
-      merged.settings=Object.assign({},remote.settings,{syncCode:_syncCode});
-      Object.assign(state,merged);
-      saveAll();
-      renderToday();
-      _lastSyncTime=Date.now();
-      updateSyncStatus();
-      setTimeout(function(){_syncPaused=false;},2000);
-    }).catch(function(e){
-      var el=document.getElementById("sSyncStatus");
-      if(el)el.innerHTML="<span style='color:#dc2626'>&#9888; Check token &mdash; connection failed</span>";
-      console.warn("sync pull err:",e);
+  const RAW='https://raw.githubusercontent.com/jbsilver27/family-hub/main/sync.json';
+  fetch(RAW+'?t='+Date.now()).then(r=>r.json()).then(remote=>{
+    if(!remote||!remote.state)return;
+    const localTs=_lastCloudHash?parseInt(_lastCloudHash)||0:0;
+    if(remote.ts&&remote.ts<=localTs)return;
+    const merged=Object.assign({},remote.state,{
+      settings:Object.assign({},remote.state.settings||{},
+        (function(){const s=loadAll().settings||{};delete s.syncCode;return s;})()
+      )
     });
+    const cur=loadAll();
+    const mergedFull=Object.assign({},cur,remote.state);
+    if(remote.state.settings)mergedFull.settings=Object.assign({},cur.settings,remote.state.settings);
+    saveAllDirect(mergedFull);
+    _lastCloudHash=String(remote.ts||Date.now());
+    updateSyncStatus();
+    if(typeof renderAll==='function')renderAll();
+  }).catch(()=>{});
 }
 
 function updateSyncStatus(){
-  var el=document.getElementById("sSyncStatus");
-  if(!el||!_syncCode)return;
-  var ago=_lastSyncTime?Math.round((Date.now()-_lastSyncTime)/1000)+"s ago":"syncing...";
-  el.innerHTML="<span style='color:#16a34a;font-weight:700'>&#10003; Connected</span> &mdash; last sync: "+ago;
+  const el=document.getElementById('sSyncStatus');
+  if(!el)return;
+  if(!_lastSyncTime){el.textContent='Checking sync...';return;}
+  const ago=Math.round((Date.now()-_lastSyncTime)/1000);
+  el.textContent='v Synced - '+ago+'s ago';
 }
 
-function pullFromCloud(){
-  if(!_syncCode)return;
-  fetch('https://api.github.com/repos/'+SYNC_REPO+'/contents/'+SYNC_FILE,{
-    headers:{'Authorization':'token '+_syncCode,'Accept':'application/vnd.github.v3+json','Cache-Control':'no-cache'}
-  }).then(r=>{
-    if(r.status===404){
-      // First time - push our state to create the file
-      const s2=JSON.parse(JSON.stringify(state));
-      delete s2._quickShop;delete s2._storeFilter;delete s2._taskBucket;delete s2._weatherCache;delete s2._weatherTs;
-      syncToCloud(s2);
-      syncStatusEl('\u2713 Connected \u2014 syncing','#4caf50');
-      return null;
-    }
-    if(r.status===401){syncStatusEl('Invalid code \u2014 check settings','#e57373');return null;}
-    return r.json();
-  }).then(data=>{
-    if(!data)return;
-    _syncFileSha=data.sha||'';
-    const raw=decodeURIComponent(escape(atob(data.content.split('\n').join(''))));
-    const remote=JSON.parse(raw);
-    const remoteHash=strHash(raw);
-    if(remoteHash===_lastCloudHash)return;
-    _lastCloudHash=remoteHash;
-    _syncPaused=true;
-    ['events','groceries','staples','recipes','meals','tasks','kids','pet','meds'].forEach(k=>{if(remote[k]!==undefined)state[k]=remote[k];});
-    try{localStorage.setItem('fhub_v3',JSON.stringify(state));}catch(e){}
-    _syncPaused=false;
-    renderToday();
-    syncStatusEl('\u2713 Updated from cloud','#4caf50');
-  }).catch(()=>{});
-}
+
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function formatTime(t){if(!t)return'';const[h,m]=t.split(':').map(Number);const ampm=h>=12?'PM':'AM';const hr=h%12||12;return hr+':'+String(m).padStart(2,'0')+' '+ampm;}
@@ -2031,7 +1979,8 @@ function calAddEventOnDay(ds){
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
-  loadAll();updateDateTime();setInterval(updateDateTime,60000);
+  loadAll();
+  startCloudSync();updateDateTime();setInterval(updateDateTime,60000);
   renderToday();
   setTimeout(()=>{
     const loc=(state.settings&&state.settings.weatherLoc)?state.settings.weatherLoc:'San Francisco, CA';
