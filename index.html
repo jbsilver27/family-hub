@@ -920,24 +920,27 @@ function syncToCloud(st){
 }
 
 function pullFromCloud(){
-  const RAW='https://raw.githubusercontent.com/jbsilver27/family-hub/main/sync.json';
-  fetch(RAW+'?t='+Date.now()).then(r=>r.json()).then(remote=>{
+  var RAW='https://raw.githubusercontent.com/jbsilver27/family-hub/main/sync.json';
+  fetch(RAW+'?t='+Date.now()).then(function(r){return r.json();}).then(function(remote){
     if(!remote||!remote.state)return;
-    const localTs=_lastCloudHash?parseInt(_lastCloudHash)||0:0;
+    var localTs=_lastCloudHash?parseInt(_lastCloudHash)||0:0;
     if(remote.ts&&remote.ts<=localTs)return;
-    const merged=Object.assign({},remote.state,{
-      settings:Object.assign({},remote.state.settings||{},
-        (function(){const s=loadAll().settings||{};delete s.syncCode;return s;})()
-      )
-    });
-    const cur=loadAll();
-    const mergedFull=Object.assign({},cur,remote.state);
-    if(remote.state.settings)mergedFull.settings=Object.assign({},cur.settings,remote.state.settings);
-    saveAllDirect(mergedFull);
+    if(remote.state.settings){
+      var lsc=state.settings&&state.settings.syncCode;
+      Object.assign(state.settings,remote.state.settings);
+      if(lsc)state.settings.syncCode=lsc;
+    }
+    if(remote.state.groceries&&remote.state.groceries.length>0)state.groceries=remote.state.groceries;
+    if(remote.state.meals)state.meals=remote.state.meals;
+    if(remote.state.tasks&&remote.state.tasks.length>0)state.tasks=remote.state.tasks;
+    if(remote.state.meds)state.meds=remote.state.meds;
+    if(remote.state.pet)state.pet=remote.state.pet;
+    saveAll();
     _lastCloudHash=String(remote.ts||Date.now());
+    _lastSyncTime=Date.now();
     updateSyncStatus();
     if(typeof renderAll==='function')renderAll();
-  }).catch(()=>{});
+  }).catch(function(){});
 }
 
 function updateSyncStatus(){
