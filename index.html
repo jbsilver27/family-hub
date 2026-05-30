@@ -2000,6 +2000,7 @@ function calAddEventOnDay(ds){
 
 document.addEventListener('DOMContentLoaded',()=>{
   loadAll();
+    if (!localStorage.getItem('fhub_pat')) localStorage.setItem('fhub_pat','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');
   startCloudSync();updateDateTime();setInterval(updateDateTime,60000);
   renderToday();
   setTimeout(()=>{
