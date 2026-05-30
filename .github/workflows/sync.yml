@@ -3,9 +3,9 @@ on:
   workflow_dispatch:
     inputs:
       data:
-        description: 'Sync state JSON'
+        description: 'Sync state JSON (base64 encoded)'
         required: true
-        default: '{}'
+        default: 'e30='
 permissions:
   contents: write
 jobs:
@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Write sync.json
-        run: printf '%s' "$DATA" > sync.json
+        run: echo "$DATA" | base64 -d > sync.json
         env:
           DATA: ${{ github.event.inputs.data }}
       - name: Commit
