@@ -1,0 +1,25 @@
+name: Sync State
+on:
+  workflow_dispatch:
+      inputs:
+            data:
+                    description: 'Sync state JSON'
+                            required: true
+                                    default: '{}'
+                                    permissions:
+                                      contents: write
+                                      jobs:
+                                        sync:
+                                            runs-on: ubuntu-latest
+                                                steps:
+                                                      - uses: actions/checkout@v4
+                                                            - name: Write sync.json
+                                                                    run: |
+                                                                              echo '${{ github.event.inputs.data }}' > sync.json
+                                                                                    - name: Commit
+                                                                                            run: |
+                                                                                                      git config user.name "FamilyHub Sync"
+                                                                                                                git config user.email "sync@familyhub"
+                                                                                                                          git add sync.json
+                                                                                                                                    git diff --staged --quiet || git commit -m "sync"
+                                                                                                                                              git push
