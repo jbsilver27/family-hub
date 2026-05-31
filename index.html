@@ -942,21 +942,31 @@ function pullFromCloud(){
     if(!remote||!remote.state)return;
     var localTs=_lastCloudHash?parseInt(_lastCloudHash)||0:0;
     if(remote.ts&&remote.ts<=localTs)return;
+    var changed=false;
     if(remote.state.settings){
       var lsc=state.settings&&state.settings.syncCode;
       Object.assign(state.settings,remote.state.settings);
       if(lsc)state.settings.syncCode=lsc;
+      changed=true;
     }
-    if(remote.state.groceries&&remote.state.groceries.length>0)state.groceries=remote.state.groceries;
-    if(remote.state.meals)state.meals=remote.state.meals;
-    if(remote.state.tasks&&remote.state.tasks.length>0)state.tasks=remote.state.tasks;
-    if(remote.state.meds)state.meds=remote.state.meds;
-    if(remote.state.pet)state.pet=remote.state.pet;
-    saveAll();
+    if(remote.state.groceries&&remote.state.groceries.length>0){state.groceries=remote.state.groceries;changed=true;}
+    if(remote.state.meals){state.meals=remote.state.meals;changed=true;}
+    if(remote.state.tasks&&remote.state.tasks.length>0){state.tasks=remote.state.tasks;changed=true;}
+    if(remote.state.meds){state.meds=remote.state.meds;changed=true;}
+    if(remote.state.pet){state.pet=remote.state.pet;changed=true;}
+    if(remote.state.kids){state.kids=remote.state.kids;changed=true;}
+    if(remote.state.events&&remote.state.events.length>0){state.events=remote.state.events;changed=true;}
+    if(changed){
+      _syncPaused=true;
+      var s=JSON.parse(JSON.stringify(state));
+      delete s._quickShop;delete s._storeFilter;delete s._taskBucket;delete s._weatherCache;delete s._weatherTs;
+      try{localStorage.setItem('fhub_v3',JSON.stringify(s));}catch(e){}
+      _syncPaused=false;
+    }
     _lastCloudHash=String(remote.ts||Date.now());
     _lastSyncTime=Date.now();
     updateSyncStatus();
-    if(typeof renderAll==='function')renderAll();
+    if(changed&&typeof renderAll==='function')renderAll();
   }).catch(function(){});
 }
 
@@ -2000,7 +2010,7 @@ function calAddEventOnDay(ds){
 
 document.addEventListener('DOMContentLoaded',()=>{
   loadAll();
-    if (!localStorage.getItem('fhub_pat')) localStorage.setItem('fhub_pat','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');
+    if (!localStorage.getItem('fhub_pat')) localStorage.setItem('fhub_pat','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');
   startCloudSync();updateDateTime();setInterval(updateDateTime,60000);
   renderToday();
   setTimeout(()=>{
