@@ -940,7 +940,7 @@ function pullFromCloud(){
     _syncFileSha=d.sha||''
     _lastSyncTime=Date.now();
     updateSyncStatus();
-    if(changed&&typeof renderAll==='function')renderAll();
+    if(changed){try{localStorage.setItem('fhub_v3',JSON.stringify(state));}catch(e){}renderAll();}
   }).catch(function(){});
 }
 function syncToCloud(s){
@@ -970,6 +970,14 @@ function syncToCloud(s){
 }
 
 
+function renderAll(){
+  try{renderToday();}catch(e){}
+  try{renderGrocery();}catch(e){}
+  try{renderTasks();}catch(e){}
+  try{renderMeals();}catch(e){}
+  try{renderKids();}catch(e){}
+  try{renderPet();}catch(e){}
+}
 function updateSyncStatus(){
   const el=document.getElementById('sSyncStatus');
   if(!el)return;
