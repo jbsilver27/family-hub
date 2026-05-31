@@ -1746,7 +1746,7 @@ function openSettings(){
   const slEl=document.getElementById('storeList');if(slEl){slEl.innerHTML=(s.stores||[]).map((st,i)=>'<div class="store-item"><span>'+st+'</span><button class="store-remove-btn" onclick="removeStore('+i+')">\u00D7</button></div>').join('');}
   // Populate sync code field
   const _si_pass=document.getElementById('sSyncPass');
-  if(_si_pass)_si_pass.value=s.syncCode||'';
+  if(_si_pass)_si_pass.value=localStorage.getItem('fhub_pat')||s.syncCode||'';
   updateSyncStatus();
   openModal('settingsModal');
 }
@@ -1771,6 +1771,7 @@ function saveSettings(){
   const _spEl=document.getElementById('sSyncPass');
   const _newCode=(_spEl?_spEl.value:'').trim()||state.settings.syncCode||'';
   state.settings.syncCode=_newCode;
+  if(_newCode&&_newCode.startsWith('ghp_')){try{localStorage.setItem('fhub_pat',_newCode);}catch(e){}}
   if(_newCode&&_newCode!==_syncCode)startCloudSync(_newCode);
   else if(!_newCode&&_syncCode)stopCloudSync();
   saveAll();closeModal('settingsModal');applyNames();renderToday();
