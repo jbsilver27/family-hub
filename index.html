@@ -900,7 +900,10 @@ function startCloudSync(code){
   if(_syncInterval)clearInterval(_syncInterval);
   updateSyncStatus();
   pullFromCloud();
-  _syncInterval=setInterval(function pullFromCloud(){
+  _syncInterval=setInterval(pullFromCloud,15000);
+}
+
+function pullFromCloud(){
   var pat=localStorage.getItem('fhub_pat')||''
   var API='https://api.github.com/repos/jbsilver27/family-hub/contents/sync.json'
   var headers={'Accept':'application/vnd.github.v3+json'};
@@ -936,55 +939,6 @@ function startCloudSync(code){
     }
     _lastCloudHash=String(remote.ts||Date.now());
     _syncFileSha=d.sha||''
-    _lastSyncTime=Date.now();
-    updateSyncStatus();
-    if(changed&&typeof renderAll==='function')renderAll();
-  }).catch(function(){});
-}
-    window._lastPushTime = now;
-    var pat = localStorage.getItem('fhub_pat') || '';
-    if (!pat) { updateSyncStatus(); return; }
-    try {
-      var json = JSON.stringify({version:1, ts:now, state:st});
-      var b64 = btoa(unescape(encodeURIComponent(json)));
-      fetch('https://api.github.com/repos/jbsilver27/family-hub/actions/workflows/sync.yml/dispatches',{
-        method:'POST',
-        headers:{'Authorization':'token '+pat,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
-        body:JSON.stringify({ref:'main',inputs:{data:b64}})
-      }).then(function(r){
-        if(r.status===204){window._lastSyncTime=Date.now();window._lastCloudHash=String(now);updateSyncStatus();}
-      }).catch(function(e){console.warn('sync push err',e);});
-    } catch(e){console.warn('syncToCloud err',e);}
-  }
-
-function pullFromCloud(){
-  var RAW='https://raw.githubusercontent.com/jbsilver27/family-hub/main/sync.json';
-  fetch(RAW+'?t='+Date.now()).then(function(r){return r.json();}).then(function(remote){
-    if(!remote||!remote.state)return;
-    var localTs=_lastCloudHash?parseInt(_lastCloudHash)||0:0;
-    if(remote.ts&&remote.ts<=localTs)return;
-    var changed=false;
-    if(remote.state.settings){
-      var lsc=state.settings&&state.settings.syncCode;
-      Object.assign(state.settings,remote.state.settings);
-      if(lsc)state.settings.syncCode=lsc;
-      changed=true;
-    }
-    if(remote.state.groceries&&remote.state.groceries.length>0){state.groceries=remote.state.groceries;changed=true;}
-    if(remote.state.meals){state.meals=remote.state.meals;changed=true;}
-    if(remote.state.tasks&&remote.state.tasks.length>0){state.tasks=remote.state.tasks;changed=true;}
-    if(remote.state.meds){state.meds=remote.state.meds;changed=true;}
-    if(remote.state.pet){state.pet=remote.state.pet;changed=true;}
-    if(remote.state.kids){state.kids=remote.state.kids;changed=true;}
-    if(remote.state.events&&remote.state.events.length>0){state.events=remote.state.events;changed=true;}
-    if(changed){
-      _syncPaused=true;
-      var s=JSON.parse(JSON.stringify(state));
-      delete s._quickShop;delete s._storeFilter;delete s._taskBucket;delete s._weatherCache;delete s._weatherTs;
-      try{localStorage.setItem('fhub_v3',JSON.stringify(s));}catch(e){}
-      _syncPaused=false;
-    }
-    _lastCloudHash=String(remote.ts||Date.now());
     _lastSyncTime=Date.now();
     updateSyncStatus();
     if(changed&&typeof renderAll==='function')renderAll();
