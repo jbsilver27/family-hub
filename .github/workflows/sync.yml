@@ -14,22 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Write sync.json
-        run: |
-          python3 - <<'PYEOF'
-import base64, json, sys, re
-data = """${{ github.event.inputs.data }}"""
-try:
-    decoded = base64.b64decode(data.strip()).decode("utf-8")
-    obj = json.loads(decoded)
-    if "state" in obj and "settings" in obj["state"]:
-        obj["state"]["settings"].pop("syncCode", None)
-    cleaned = json.dumps(obj)
-    cleaned = re.sub(r'ghp_[A-Za-z0-9]+', 'REMOVED', cleaned)
-except Exception:
-    cleaned = '{"ts":0,"state":{}}'
-with open("sync.json", "w") as f:
-    f.write(cleaned)
-PYEOF
+        run: echo "$DATA" | base64 -d | sed 's/ghp_[A-Za-z0-9]\+/REMOVED/g' > sync.json
         env:
           DATA: ${{ github.event.inputs.data }}
       - name: Commit
