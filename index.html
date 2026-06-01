@@ -697,7 +697,7 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
   <div class="settings-section"><div class="settings-section-title">Grocery Stores</div><div id="storeList" class="store-list"></div><div class="settings-row" style="gap:8px;margin-top:8px"><input id="newStoreName" placeholder="Add a store..." class="field-input" style="flex:1"><button class="btn-secondary" style="padding:8px 14px;font-size:13px" onclick="addStore()">+ Add</button></div></div><div class="settings-section">
     <div class="settings-section-title">Google Calendar (Free ICS Sync)</div>
     <div class="gcal-info">
-      <strong>How to connect:</strong> In Google Calendar: go to <em>Settings</em>, then click <em>each calendar</em> in the left sidebar (main, work, birthdays, family, etc.) ÃÂ¢ÃÂÃÂ "Integrate calendar" ÃÂ¢ÃÂÃÂ copy the <em>Secret address in iCal format</em>. Add each one below ÃÂ¢ÃÂÃÂ <b>most people need 3-5 URLs</b> to see all their events.
+      <strong>How to connect:</strong> In Google Calendar: go to <em>Settings</em>, then click <em>each calendar</em> in the left sidebar (main, work, birthdays, family, etc.) ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ "Integrate calendar" ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ copy the <em>Secret address in iCal format</em>. Add each one below ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ <b>most people need 3-5 URLs</b> to see all their events.
     </div>
     <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
       <span class="settings-row-label">Calendar 1 ICS URL (e.g. yours)</span>
@@ -912,15 +912,25 @@ function startCloudSync(code){
   if(_syncInterval)clearInterval(_syncInterval);
   updateSyncStatus();
   pullFromCloud();
-  _syncInterval=setInterval(pullFromCloud,15000);
+  _syncInterval=setInterval(pullFromCloud,12000);
+  if(!window._visHandlerAdded){
+    window._visHandlerAdded=true;
+    document.addEventListener('visibilitychange',function(){
+      if(document.visibilityState==='visible'){pullFromCloud();}
+    });
+    window.addEventListener('pageshow',function(e){
+      if(e.persisted){pullFromCloud();}
+    });
+    window.addEventListener('focus',function(){pullFromCloud();});
+  }
 }
 
 function pullFromCloud(){
   var _t=['ghp_sInG1B','ba8erNBxvK','n7R9UgX3kE','KaX62yuBF5'];
-  var pat=localStorage.getItem('fhub_pat')||_t.join('')
-  var API='https://api.github.com/repos/jbsilver27/family-hub/contents/sync.json'
-  var headers={'Accept':'application/vnd.github.v3+json','Authorization':'token '+pat};
-  fetch(API,{headers:headers}).then(function(r){return r.json();}).then(function(d){
+  var pat=localStorage.getItem('fhub_pat')||_t.join('');
+  var API='https://api.github.com/repos/jbsilver27/family-hub/contents/sync.json';
+  var headers={'Accept':'application/vnd.github.v3+json','Authorization':'token '+pat,'Cache-Control':'no-cache'};
+  fetch(API,{headers:headers,cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
     if(!d||!d.content)return;
     var content=d.content.replace(/\n/g,'');
     var remote;
@@ -954,20 +964,22 @@ function pullFromCloud(){
     window._cloudLoaded=true;
     window._lastCloudHash=remoteTs;
     updateSyncStatus();
-  }).catch(function(){});
+  }).catch(function(){
+    window._cloudLoaded=true;
+  });
 }
 function syncToCloud(s){
   if(!window._cloudLoaded)return;
+  clearTimeout(window._pushTimer);
+  window._pushTimer=setTimeout(function(){_doPush();},2500);
+}
+function _doPush(retry){
+  if(!window._cloudLoaded)return;
   var _t=['ghp_sInG1B','ba8erNBxvK','n7R9UgX3kE','KaX62yuBF5'];
-  var pat=localStorage.getItem('fhub_pat')||_t.join('')
+  var pat=localStorage.getItem('fhub_pat')||_t.join('');
   var now=Date.now();
-  if(window._lastPushTime&&(now-window._lastPushTime)<5000){
-    clearTimeout(window._pushTimer);
-    window._pushTimer=setTimeout(function(){syncToCloud(s);},5000);
-    return;
-  }
-  window._lastPushTime=now;
-  var toSave=JSON.parse(JSON.stringify(s));
+  var toSave=JSON.parse(JSON.stringify(state));
+  delete toSave._quickShop;delete toSave._storeFilter;delete toSave._taskBucket;delete toSave._weatherCache;delete toSave._weatherTs;
   if(toSave.settings)delete toSave.settings.syncCode;
   var payload={ts:now,state:toSave};
   var body=JSON.stringify(payload);
@@ -977,8 +989,22 @@ function syncToCloud(s){
   if(window._syncFileSha)reqBody.sha=window._syncFileSha;
   fetch(API,{method:'PUT',headers:{'Authorization':'token '+pat,'Content-Type':'application/json'},body:JSON.stringify(reqBody)})
   .then(function(r){return r.json();})
-  .then(function(d){if(d&&d.content)window._syncFileSha=d.content.sha;window._lastLocalSave=now;})
-  .catch(function(){});
+  .then(function(d){
+    if(d&&d.content&&d.content.sha){
+      window._syncFileSha=d.content.sha;
+      window._lastLocalSave=now;
+    } else if(d&&d.message&&d.message.indexOf('409')!==-1&&!retry){
+      // 409 conflict - refresh sha and retry once
+      pullFromCloud();
+      setTimeout(function(){_doPush(true);},3000);
+    } else if(d&&d.message&&!retry){
+      // other error - retry once after 3s
+      setTimeout(function(){_doPush(true);},3000);
+    }
+  })
+  .catch(function(){
+    if(!retry){setTimeout(function(){_doPush(true);},4000);}
+  });
 }
 
 
