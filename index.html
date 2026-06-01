@@ -697,7 +697,7 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
   <div class="settings-section"><div class="settings-section-title">Grocery Stores</div><div id="storeList" class="store-list"></div><div class="settings-row" style="gap:8px;margin-top:8px"><input id="newStoreName" placeholder="Add a store..." class="field-input" style="flex:1"><button class="btn-secondary" style="padding:8px 14px;font-size:13px" onclick="addStore()">+ Add</button></div></div><div class="settings-section">
     <div class="settings-section-title">Google Calendar (Free ICS Sync)</div>
     <div class="gcal-info">
-      <strong>How to connect:</strong> In Google Calendar: go to <em>Settings</em>, then click <em>each calendar</em> in the left sidebar (main, work, birthdays, family, etc.) Ã¢ÂÂ "Integrate calendar" Ã¢ÂÂ copy the <em>Secret address in iCal format</em>. Add each one below Ã¢ÂÂ <b>most people need 3-5 URLs</b> to see all their events.
+      <strong>How to connect:</strong> In Google Calendar: go to <em>Settings</em>, then click <em>each calendar</em> in the left sidebar (main, work, birthdays, family, etc.) ÃÂ¢ÃÂÃÂ "Integrate calendar" ÃÂ¢ÃÂÃÂ copy the <em>Secret address in iCal format</em>. Add each one below ÃÂ¢ÃÂÃÂ <b>most people need 3-5 URLs</b> to see all their events.
     </div>
     <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
       <span class="settings-row-label">Calendar 1 ICS URL (e.g. yours)</span>
@@ -1522,7 +1522,7 @@ function viewRecipe(idx){
 function toggleIngCheck(ri,ii,c){if(state.recipes[ri]&&state.recipes[ri].ingredients[ii]){state.recipes[ri].ingredients[ii].checked=c;saveAll();}}
 function addSelIngredients(ri){
   const r=state.recipes[ri];if(!r)return;let count=0;
-  (r.ingredients||[]).forEach(ing=>{if(ing.checked){const ex=state.groceries.some(g=>(g.item||g.name||'').toLowerCase()===in(g.item||g.name||'').toLowerCase()&&!g.checked);if(!ex){state.groceries.push({id:Date.now()+Math.random(),name:ing.name,qty:parseFloat(ing.qty)||1,unit:ing.unit||'each',cat:'Pantry',store:'Any',note:'',checked:false});count++;}}});
+  (r.ingredients||[]).forEach(ing=>{if(ing.checked){const ex=state.groceries.some(g=>(g.item||g.name||'').toLowerCase()===ing.name.toLowerCase()&&!g.checked);if(!ex){state.groceries.push({id:Date.now()+Math.random(),name:ing.name,qty:parseFloat(ing.qty)||1,unit:ing.unit||'each',cat:'Pantry',store:'Any',note:'',checked:false});count++;}}});
   saveAll();showToast(count+' ingredient'+(count!==1?'s':'')+' added');updateStats();
 }
 function planFromDetail(idx){closeModal('recipeDetailModal');const day=DAYS[new Date().getDay()];openAssignMeal(day,'Dinner');setTimeout(()=>setMealRecipe(idx),200);}
