@@ -697,7 +697,7 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
   <div class="settings-section"><div class="settings-section-title">Grocery Stores</div><div id="storeList" class="store-list"></div><div class="settings-row" style="gap:8px;margin-top:8px"><input id="newStoreName" placeholder="Add a store..." class="field-input" style="flex:1"><button class="btn-secondary" style="padding:8px 14px;font-size:13px" onclick="addStore()">+ Add</button></div></div><div class="settings-section">
     <div class="settings-section-title">Google Calendar (Free ICS Sync)</div>
     <div class="gcal-info">
-      <strong>How to connect:</strong> In Google Calendar: go to <em>Settings</em>, then click <em>each calendar</em> in the left sidebar (main, work, birthdays, family, etc.) ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ "Integrate calendar" ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ copy the <em>Secret address in iCal format</em>. Add each one below ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ <b>most people need 3-5 URLs</b> to see all their events.
+      <strong>How to connect:</strong> In Google Calendar: go to <em>Settings</em>, then click <em>each calendar</em> in the left sidebar (main, work, birthdays, family, etc.) ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ "Integrate calendar" ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ copy the <em>Secret address in iCal format</em>. Add each one below ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ <b>most people need 3-5 URLs</b> to see all their events.
     </div>
     <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
       <span class="settings-row-label">Calendar 1 ICS URL (e.g. yours)</span>
@@ -929,8 +929,8 @@ function pullFromCloud(){
   var _t=['ghp_sInG1B','ba8erNBxvK','n7R9UgX3kE','KaX62yuBF5'];
   var pat=localStorage.getItem('fhub_pat')||_t.join('');
   var API='https://api.github.com/repos/jbsilver27/family-hub/contents/sync.json';
-  var headers={'Accept':'application/vnd.github.v3+json','Authorization':'token '+pat,'Cache-Control':'no-cache'};
-  fetch(API,{headers:headers,cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+  var headers={'Accept':'application/vnd.github.v3+json','Authorization':'token '+pat};
+  fetch(API+'?t='+Date.now(),{headers:headers}).then(function(r){return r.json();}).then(function(d){
     if(!d||!d.content)return;
     var content=d.content.replace(/\n/g,'');
     var remote;
