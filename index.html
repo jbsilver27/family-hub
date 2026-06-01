@@ -697,7 +697,7 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
   <div class="settings-section"><div class="settings-section-title">Grocery Stores</div><div id="storeList" class="store-list"></div><div class="settings-row" style="gap:8px;margin-top:8px"><input id="newStoreName" placeholder="Add a store..." class="field-input" style="flex:1"><button class="btn-secondary" style="padding:8px 14px;font-size:13px" onclick="addStore()">+ Add</button></div></div><div class="settings-section">
     <div class="settings-section-title">Google Calendar (Free ICS Sync)</div>
     <div class="gcal-info">
-      <strong>How to connect:</strong> In Google Calendar: go to <em>Settings</em>, then click <em>each calendar</em> in the left sidebar (main, work, birthdays, family, etc.) → "Integrate calendar" → copy the <em>Secret address in iCal format</em>. Add each one below — <b>most people need 3-5 URLs</b> to see all their events.
+      <strong>How to connect:</strong> In Google Calendar: go to <em>Settings</em>, then click <em>each calendar</em> in the left sidebar (main, work, birthdays, family, etc.) â "Integrate calendar" â copy the <em>Secret address in iCal format</em>. Add each one below â <b>most people need 3-5 URLs</b> to see all their events.
     </div>
     <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
       <span class="settings-row-label">Calendar 1 ICS URL (e.g. yours)</span>
@@ -783,7 +783,7 @@ html,body{height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color
 </div>
 
 <script>
-const STORE_NAMES=['Any','Costco','Target',"Trader Joe's",'Whole Foods','Safeway','Albertsons','Amazon','Other'];
+const STORE_NAMES=['Any','Costco','Target',"Trader Joe's",'Whole Foods','H Mart','Other'];
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const FULL_DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MEAL_TYPES=['Breakfast','Lunch','Dinner','Dessert'];
@@ -864,10 +864,10 @@ let state={
   events:[],groceries:[],staples:[],recipes:[],
   meals:{},
   tasks:[],
-  kids:[{name:'Lily',activities:[]},{name:'Emma',activities:[]}],
+  kids:[{name:'Cam',activities:[]},{name:'Kaz',activities:[]}],
   pet:{name:'Biscuit',breed:'Good boy',today:{fedAM:false,fedAfternoon:false,fedPM:false,walked:false,meds:false},lastReset:'',reminders:[]},
   meds:{today:{AM:false,PM:false},lastReset:'',AM_time:'',PM_time:''},
-  settings:{p1:'Mom',p2:'Erick',k1:'Lily',k2:'Emma',petName:'Biscuit',petBreed:'Good boy',stores:['Costco','Target',"Trader Joe's",'Whole Foods','Safeway','Albertsons','Amazon'],weatherLoc:'San Francisco, CA',ics1:'',ics2:'',ics3:'',ics4:'',ics5:''},
+  settings:{p1:'Mom',p2:'Erick',k1:'Cam',k2:'Kaz',petName:'Sora',petBreed:'Bernedoodle',stores:['Costco','Target',"Trader Joe's",'Whole Foods','Safeway','Albertsons','Amazon'],weatherLoc:'San Francisco, CA',ics1:'',ics2:'',ics3:'',ics4:'',ics5:''},
   _quickShop:false,_storeFilter:'All',_taskBucket:'today',_weatherCache:null,_weatherTs:0
 };
 
@@ -919,45 +919,45 @@ function pullFromCloud(){
   var _t=['ghp_sInG1B','ba8erNBxvK','n7R9UgX3kE','KaX62yuBF5'];
   var pat=localStorage.getItem('fhub_pat')||_t.join('')
   var API='https://api.github.com/repos/jbsilver27/family-hub/contents/sync.json'
-  var headers={'Accept':'application/vnd.github.v3+json'};
-  if(pat)headers['Authorization']='token '+pat;
-  fetch(API+'?t='+Date.now(),{headers:headers}).then(function(r){return r.json();}).then(function(d){
+  var headers={'Accept':'application/vnd.github.v3+json','Authorization':'token '+pat};
+  fetch(API,{headers:headers}).then(function(r){return r.json();}).then(function(d){
     if(!d||!d.content)return;
     var content=d.content.replace(/\n/g,'');
     var remote;
     try{remote=JSON.parse(atob(content));}catch(e){return;}
     if(!remote||!remote.state)return;
-    var localTs=_lastCloudHash?parseInt(_lastCloudHash)||0:0;
-    if(remote.ts&&remote.ts<=localTs)return;
-    var changed=false;
-    if(remote.state.settings){
-      var lsc=state.settings&&state.settings.syncCode;
-      Object.assign(state.settings,remote.state.settings);
-      if(lsc)state.settings.syncCode=lsc;
-      changed=true;
+    window._syncFileSha=d.sha;
+    var remoteTs=remote.ts||0;
+    var localTs=window._lastLocalSave||0;
+    if(remoteTs>localTs){
+      var rs=remote.state;
+      var changed=false;
+      ['events','groceries','staples','recipes','tasks'].forEach(function(k){
+        if(rs[k]!==undefined){state[k]=rs[k];changed=true;}
+      });
+      if(rs.meals!==undefined){state.meals=rs.meals;changed=true;}
+      if(rs.kids!==undefined){state.kids=rs.kids;changed=true;}
+      if(rs.pet!==undefined){state.pet=rs.pet;changed=true;}
+      if(rs.meds!==undefined){state.meds=rs.meds;changed=true;}
+      if(rs.settings!==undefined){
+        var lsc=state.settings&&state.settings.syncCode;
+        state.settings=rs.settings;
+        if(lsc)state.settings.syncCode=lsc;
+        changed=true;
+      }
+      if(changed){
+        window._lastLocalSave=remoteTs;
+        try{localStorage.setItem('fhub_v3',JSON.stringify(state));}catch(e){}
+        renderAll();
+      }
     }
-    if(remote.state.groceries&&remote.state.groceries.length>0){state.groceries=remote.state.groceries;changed=true;}
-    if(remote.state.meals){state.meals=remote.state.meals;changed=true;}
-    if(remote.state.tasks&&remote.state.tasks.length>0){state.tasks=remote.state.tasks;changed=true;}
-    if(remote.state.meds){state.meds=remote.state.meds;changed=true;}
-    if(remote.state.pet){state.pet=remote.state.pet;changed=true;}
-    if(remote.state.kids){state.kids=remote.state.kids;changed=true;}
-    if(remote.state.events&&remote.state.events.length>0){state.events=remote.state.events;changed=true;}
-    if(changed){
-      _syncPaused=true;
-      var s=JSON.parse(JSON.stringify(state));
-      delete s._quickShop;delete s._storeFilter;delete s._taskBucket;delete s._weatherCache;delete s._weatherTs;
-      try{localStorage.setItem('fhub_v3',JSON.stringify(s));}catch(e){}
-      _syncPaused=false;
-    }
-    _lastCloudHash=String(remote.ts||Date.now());
-    _syncFileSha=d.sha||''
-    _lastSyncTime=Date.now();
+    window._cloudLoaded=true;
+    window._lastCloudHash=remoteTs;
     updateSyncStatus();
-    if(changed){try{localStorage.setItem('fhub_v3',JSON.stringify(state));}catch(e){}renderAll();}
   }).catch(function(){});
 }
 function syncToCloud(s){
+  if(!window._cloudLoaded)return;
   var _t=['ghp_sInG1B','ba8erNBxvK','n7R9UgX3kE','KaX62yuBF5'];
   var pat=localStorage.getItem('fhub_pat')||_t.join('')
   var now=Date.now();
@@ -967,20 +967,18 @@ function syncToCloud(s){
     return;
   }
   window._lastPushTime=now;
-  if(s&&s.settings)delete s.settings.syncCode;
-  var payload={ts:now,state:s};
-  var b64=btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  var toSave=JSON.parse(JSON.stringify(s));
+  if(toSave.settings)delete toSave.settings.syncCode;
+  var payload={ts:now,state:toSave};
+  var body=JSON.stringify(payload);
+  var encoded=btoa(unescape(encodeURIComponent(body)));
   var API='https://api.github.com/repos/jbsilver27/family-hub/contents/sync.json';
-  var body={message:'sync',content:b64};
-  if(_syncFileSha)body.sha=_syncFileSha;
-  fetch(API,{
-    method:'PUT',
-    headers:{'Authorization':'token '+pat,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'},
-    body:JSON.stringify(body)
-  }).then(function(r){return r.json();}).then(function(d){
-    if(d&&d.content&&d.content.sha)_syncFileSha=d.content.sha;
-    _lastSyncTime=Date.now();updateSyncStatus();
-  }).catch(function(){});
+  var reqBody={message:'sync',content:encoded};
+  if(window._syncFileSha)reqBody.sha=window._syncFileSha;
+  fetch(API,{method:'PUT',headers:{'Authorization':'token '+pat,'Content-Type':'application/json'},body:JSON.stringify(reqBody)})
+  .then(function(r){return r.json();})
+  .then(function(d){if(d&&d.content)window._syncFileSha=d.content.sha;window._lastLocalSave=now;})
+  .catch(function(){});
 }
 
 
